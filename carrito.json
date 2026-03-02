@@ -1,0 +1,87 @@
+[
+  {
+    "tipo": "articulo",
+    "articuloId": 1,
+    "nombre": "Pizza vegetal",
+    "tamaño": "Pequeña",
+    "cantidad": 1,
+    "precioBase": 7.5,
+    "precioExtras": 0,
+    "precioTotal": 7.5,
+    "ingredientesBase": [
+      { "id": 16, "nombre": "Tomate", "categoria": "Salsa" },
+      { "id": 18, "nombre": "Mozzarela", "categoria": "Queso" },
+      { "id": 42, "nombre": "Aceitunas negras", "categoria": "Vegetal" },
+      { "id": 43, "nombre": "Aceitunas verdes", "categoria": "Vegetal" },
+      { "id": 45, "nombre": "Cebolla", "categoria": "Vegetal" },
+      { "id": 46, "nombre": "Champiñones", "categoria": "Vegetal" },
+      { "id": 56, "nombre": "Pimiento verde", "categoria": "Vegetal" }
+    ],
+    "ingredientesExtras": [],
+    "ingredientesQuitados": [],
+    "uid": "9fd3d300-4666-4155-8f97-b81e4c9d796b"
+  },
+  {
+    "tipo": "articulo-personalizado",
+    "articuloId": 1,
+    "nombre": "Pizza vegetal",
+    "tamaño": "Mediana",
+    "cantidad": 1,
+    "precioBase": 11,
+    "precioExtras": 1,
+    "precioTotal": 12,
+    "ingredientesExtras": [
+      { "id": 18, "nombre": "Mozzarela", "cantidad": 1 },
+      { "id": 16, "nombre": "Tomate", "cantidad": 1 },
+      { "id": 45, "nombre": "Cebolla", "cantidad": 1 },
+      { "id": 46, "nombre": "Champiñones", "cantidad": 1 },
+      { "id": 56, "nombre": "Pimiento verde", "cantidad": 1 },
+      { "id": 25, "nombre": "Bacon crujiente", "cantidad": 1 }
+    ],
+    "ingredientesQuitados": [
+      { "id": 42, "nombre": "Aceitunas negras" },
+      { "id": 43, "nombre": "Aceitunas verdes" }
+    ],
+    "uid": "b5ada8bc-1784-43d8-9eea-fefedd138109"
+  },
+  {
+    "tipo": "pizza-entera",
+    "nombre": "Pizza personalizada",
+    "tamaño": "Mediana",
+    "cantidad": 1,
+    "precioBase": 0,
+    "precioExtras": 5,
+    "precioTotal": 5,
+    "ingredientesQuitados": [],
+    "uid": "149e52c7-5f83-462c-8a83-1166a0efb4df"
+  },
+  {
+    "tipo": "pizza-mitades",
+    "tamaño": "Mediana",
+    "cantidad": 1,
+    "precioBase": 11,
+    "precioExtras": 6,
+    "precioTotal": 17,
+    "mitades": {
+      "mitadA": {
+        "nombre": "Pizza vegetal",
+        "ingredientesExtras": [
+          { "id": 24, "nombre": "Bacon", "cantidad": 1 },
+          { "id": 78, "nombre": "Carne de kebak", "cantidad": 1 },
+          { "id": 31, "nombre": "Frankfurt", "cantidad": 1 },
+          { "id": 64, "nombre": "Huevo plancha", "cantidad": 1 }
+        ],
+        "ingredientesQuitados": [
+          { "id": 42, "nombre": "Aceitunas negras" },
+          { "id": 43, "nombre": "Aceitunas verdes" }
+        ]
+      },
+      "mitadB": {
+        "nombre": "Pizza hawaiana",
+        "ingredientesExtras": [{ "id": 58, "nombre": "Piña", "cantidad": 2 }],
+        "ingredientesQuitados": []
+      }
+    },
+    "uid": "a0d02234-c05a-4f23-b52f-dd1e349a94b9"
+  }
+]
