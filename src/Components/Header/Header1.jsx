@@ -91,13 +91,13 @@ export default function Header1({ variant }) {
               <div className="cs_main_header_right">
                 <div className="header-btn d-flex align-items-center">
                   <div className="main-button">
-                    <a
-                      href="/shop/cart"
+                    <Link
+                      to="/shop/cart"
                       className="theme-btn flex items-center gap-3"
                     >
                       <i className="bi bi-basket2"></i>
                       Ver pedido
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>

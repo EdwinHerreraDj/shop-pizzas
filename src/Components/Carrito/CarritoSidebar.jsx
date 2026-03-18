@@ -161,9 +161,9 @@ export default function CarritoSidebar() {
           </li>
 
           <li>
-            <a href="/shop/cart" className="theme-btn w-100 text-center">
+            <Link to="/shop/cart" className="theme-btn w-100 text-center">
               Ver carrito
-            </a>
+            </Link>
           </li>
         </ul>
       )}
