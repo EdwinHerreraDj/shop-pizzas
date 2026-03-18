@@ -29,17 +29,14 @@ const Shop1 = () => {
   } = useShop();
 
   const pizzasRef = useRef(null);
+  const handlePageChange = (page) => {
+    setPage(page);
 
-  useEffect(() => {
-    if (!pizzasRef.current) return;
-
-    requestAnimationFrame(() => {
-      pizzasRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    pizzasRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
     });
-  }, [currentPage]);
+  };
 
   return (
     <div
@@ -55,20 +52,6 @@ const Shop1 = () => {
               data-wow-delay=".3s"
             >
               <div className="main-sidebar">
-                <div className="single-sidebar-widget">
-                  <h5 className="widget-title">Buscar</h5>
-                  <div className="search-widget">
-                    <form action="#">
-                      <input
-                        type="text"
-                        placeholder="Busca tu pizza favorita"
-                      />
-                      <button>
-                        <i className="bi bi-search"></i>
-                      </button>
-                    </form>
-                  </div>
-                </div>
                 {/* Crea tu pizza */}
                 <div className="single-sidebar-widget">
                   <h5 className="widget-title">Crea tu pizza</h5>
@@ -231,7 +214,7 @@ const Shop1 = () => {
               <Pagination
                 currentPage={currentPage}
                 lastPage={lastPage}
-                onPageChange={setPage}
+                onPageChange={handlePageChange}
               />
             </div>
           </div>

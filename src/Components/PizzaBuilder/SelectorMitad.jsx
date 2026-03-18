@@ -2,151 +2,127 @@ import { useState, useCallback } from "react";
 import PizzaEnteraBuilder from "./PizzaEnteraBuilder";
 import PizzaExistenteSelector from "./PizzaExistenteSelector";
 
-export default function SelectorMitad({ tamaño, onChange }) {
+/**
+ * Selector de una mitad de pizza.
+ * Permite elegir entre pizza existente del menú o crear una personalizada.
+ *
+ * Props:
+ *   tamanoId     — id numérico del tamaño
+ *   tamanoNombre — nombre del tamaño (para display)
+ *   onChange     — callback con estructura unificada de mitad
+ */
+export default function SelectorMitad({ tamanoId, tamanoNombre, onChange }) {
   const [modo, setModo] = useState("existente");
 
-  // PERSONALIZADA DESDE CERO
-  const handlePersonalizadaChange = useCallback(
-    (data) => {
-      // Soporta el builder nuevo (extras/quitados/productoId) y el viejo (ingredientesExtras/ingredientesQuitados)
-      const extras = data?.extras ?? data?.ingredientesExtras ?? [];
-      const quitados = data?.quitados ?? data?.ingredientesQuitados ?? [];
-
+  /* ── Normalizar datos antes de emitir ──────────── */
+  const emitir = useCallback(
+    (origen, data) => {
       onChange({
-        modo: "personalizada",
-
-        // IMPORTANTE: esto NO puede ser null si es una base editable
-        articuloId: data?.productoId ?? 3,
-
-        nombre: data?.nombre ?? "Personalizada",
-
-        // Si tu builder no manda precioBase, aquí quedará 0 (mejorarlo luego)
-        precioBase: data?.precioBase ?? 0,
-        precioExtras: data?.precioExtras ?? 0,
-
-        ingredientesExtras: extras,
-        ingredientesQuitados: quitados,
+        modo: origen,
+        articuloId: data.articuloId,
+        tipoProductoId: data.tipoProductoId,
+        nombre: data.nombre,
+        tamanoId: data.tamanoId ?? tamanoId,
+        tamano: data.tamano ?? tamanoNombre,
+        precioBase: data.precioBase ?? 0,
+        precioExtras: data.precioExtras ?? 0,
+        precioTotal:
+          data.precioTotal ??
+          (data.precioBase ?? 0) + (data.precioExtras ?? 0),
+        ingredientesExtras: data.ingredientesExtras ?? [],
+        ingredientesQuitados: data.ingredientesQuitados ?? [],
       });
     },
-    [onChange]
+    [onChange, tamanoId, tamanoNombre]
   );
 
-  // PIZZA EXISTENTE
+  const handlePersonalizadaChange = useCallback(
+    (data) => emitir("personalizada", data),
+    [emitir]
+  );
+
   const handleExistenteChange = useCallback(
     (data) => {
-      // por si también migras el selector a extras/quitados
-      const extras = data?.extras ?? data?.ingredientesExtras ?? [];
-      const quitados = data?.quitados ?? data?.ingredientesQuitados ?? [];
-
-      onChange({
-        modo: "existente",
-        articuloId: data.articuloId,
-        nombre: data.nombre,
-
-        precioBase: data.precioBase,
-        precioExtras: data.precioExtras ?? 0,
-
-        ingredientesExtras: extras,
-        ingredientesQuitados: quitados,
-      });
+      if (data === null) {
+        onChange(null);
+        return;
+      }
+      emitir("existente", data);
     },
-    [onChange]
+    [emitir, onChange]
   );
 
   return (
     <div className="mb-5">
+      {/* Selector modo */}
       <div className="row g-2 mb-4">
-        {/* EXISTENTE */}
         <div className="col-6">
-          <button
-            type="button"
+          <ModoCard
+            activo={modo === "existente"}
             onClick={() => setModo("existente")}
-            className={`
-              w-100 text-start p-3 rounded-4 border
-              ${modo === "existente" ? "shadow-sm" : ""}
-            `}
-            style={
-              modo === "existente"
-                ? {
-                    borderColor: "#eb0029",
-                    backgroundColor: "rgba(235, 0, 41, 0.08)",
-                  }
-                : { backgroundColor: "#fff" }
-            }
-          >
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <span
-                className="d-inline-flex align-items-center justify-content-center rounded-circle text-white"
-                style={{
-                  width: 28,
-                  height: 28,
-                  backgroundColor: "#eb0029",
-                }}
-              >
-                <i className="bi bi-card-list"></i>
-              </span>
-
-              <span className="fw-semibold">Pizza existente</span>
-            </div>
-
-            <small className="text-muted">
-              Elige una pizza del menú y personalízala
-            </small>
-          </button>
+            icono="bi-card-list"
+            titulo="Pizza existente"
+            subtitulo="Elige una pizza del menú y personalízala"
+          />
         </div>
 
-        {/* PERSONALIZADA */}
         <div className="col-6">
-          <button
-            type="button"
+          <ModoCard
+            activo={modo === "personalizada"}
             onClick={() => setModo("personalizada")}
-            className={`
-              w-100 text-start p-3 rounded-4 border
-              ${modo === "personalizada" ? "shadow-sm" : ""}
-            `}
-            style={
-              modo === "personalizada"
-                ? {
-                    borderColor: "#eb0029",
-                    backgroundColor: "rgba(235, 0, 41, 0.08)",
-                  }
-                : { backgroundColor: "#fff" }
-            }
-          >
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <span
-                className="d-inline-flex align-items-center justify-content-center rounded-circle text-white"
-                style={{
-                  width: 28,
-                  height: 28,
-                  backgroundColor: "#eb0029",
-                }}
-              >
-                <i className="bi bi-sliders"></i>
-              </span>
-
-              <span className="fw-semibold">Crear desde cero</span>
-            </div>
-
-            <small className="text-muted">
-              Configura ingredientes uno a uno
-            </small>
-          </button>
+            icono="bi-sliders"
+            titulo="Crear desde cero"
+            subtitulo="Configura ingredientes uno a uno"
+          />
         </div>
       </div>
 
-      {/* CONTENIDO */}
+      {/* Builder según modo */}
       {modo === "existente" ? (
         <PizzaExistenteSelector
-          tamaño={tamaño}
+          tamanoId={tamanoId}
           onSelect={handleExistenteChange}
         />
       ) : (
         <PizzaEnteraBuilder
-          tamaño={tamaño}
+          tamanoId={tamanoId}
           onChange={handlePersonalizadaChange}
         />
       )}
     </div>
+  );
+}
+
+/* ── Sub-componente: ModoCard ────────────────────── */
+function ModoCard({ activo, onClick, icono, titulo, subtitulo }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-100 text-start p-3 rounded-4 border ${activo ? "shadow-sm" : ""}`}
+      style={
+        activo
+          ? {
+              borderColor: "#eb0029",
+              backgroundColor: "rgba(235, 0, 41, 0.08)",
+            }
+          : { backgroundColor: "#fff" }
+      }
+    >
+      <div className="d-flex align-items-center gap-2 mb-1">
+        <span
+          className="d-inline-flex align-items-center justify-content-center rounded-circle text-white"
+          style={{
+            width: 28,
+            height: 28,
+            backgroundColor: "#eb0029",
+          }}
+        >
+          <i className={`bi ${icono}`} />
+        </span>
+        <span className="fw-semibold">{titulo}</span>
+      </div>
+      <small className="text-muted">{subtitulo}</small>
+    </button>
   );
 }

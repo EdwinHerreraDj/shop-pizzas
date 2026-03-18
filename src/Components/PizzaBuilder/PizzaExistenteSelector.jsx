@@ -1,78 +1,97 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Tab, Tabs } from "react-bootstrap";
+import { Tabs, Tab } from "react-bootstrap";
 import usePizzasExistentes from "../../hooks/usePizzasExistentes";
 import useIngredientesConPrecios from "../../hooks/useIngredientesConPrecios";
 
 const toNum = (v) => Number.parseFloat(v ?? 0) || 0;
 
-const formatCategoria = (key) =>
-  key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+const formatEUR = (v) =>
+  new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  }).format(Number.isFinite(v) ? v : 0);
 
-export default function PizzaExistenteSelector({ tamaño, onSelect }) {
-  /* ===============================
-     PAGINACIÓN
-  =============================== */
+export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
+  /* ═══════════════════════════════════════════════
+     LISTADO PAGINADO
+  ═══════════════════════════════════════════════ */
   const [page, setPage] = useState(1);
   const { data: pizzasResponse, isLoading } = usePizzasExistentes(page);
 
-  const pizzas = useMemo(() => {
-    if (!pizzasResponse?.data) return [];
-    return pizzasResponse.data;
-  }, [pizzasResponse]);
-
+  const pizzas = useMemo(() => pizzasResponse?.data ?? [], [pizzasResponse]);
   const currentPage = pizzasResponse?.current_page ?? 1;
   const lastPage = pizzasResponse?.last_page ?? 1;
 
-  /* ===============================
-     SELECCIÓN
-  =============================== */
+  /* ═══════════════════════════════════════════════
+     SELECCIÓN + DETALLE
+  ═══════════════════════════════════════════════ */
   const [pizzaSeleccionada, setPizzaSeleccionada] = useState(null);
-
   const { data: detalle, isLoading: loadingDetalle } =
     useIngredientesConPrecios(pizzaSeleccionada?.id);
 
-  /* ===============================
-     INGREDIENTES (BASE + EXTRAS)
-  =============================== */
+  /* ═══════════════════════════════════════════════
+     INGREDIENTES
+  ═══════════════════════════════════════════════ */
   const [ingredientes, setIngredientes] = useState([]);
 
-  // Inicializar ingredientes al seleccionar pizza
   useEffect(() => {
     if (!detalle?.ingredientes) return;
-
-    const iniciales = Object.values(detalle.ingredientes)
+    const inicial = Object.values(detalle.ingredientes)
       .flat()
-      .map((ing) => ({
-        ...ing,
-        cantidad: ing.incluido ? 1 : 0, // BASE = 1, EXTRA = 0
-      }));
-
-    setIngredientes(iniciales);
+      .map((ing) => ({ ...ing, cantidad: ing.incluido ? 1 : 0 }));
+    setIngredientes(inicial);
   }, [detalle]);
-
-  const categorias = useMemo(() => {
-    if (!detalle?.ingredientes) return [];
-    return Object.keys(detalle.ingredientes);
-  }, [detalle]);
-
-  const [tabActiva, setTabActiva] = useState(null);
 
   useEffect(() => {
-    if (categorias.length && !tabActiva) {
-      setTabActiva(categorias[0]);
-    }
-  }, [categorias, tabActiva]);
+    if (!detalle?.ingredientes) return;
+    const inicial = Object.values(detalle.ingredientes)
+      .flat()
+      .map((ing) => ({ ...ing, cantidad: ing.incluido ? 1 : 0 }));
+    setIngredientes(inicial);
+  }, [tamanoId, detalle]);
 
-  /* ===============================
-     MODIFICAR INGREDIENTES
-  =============================== */
+  /* ═══════════════════════════════════════════════
+     HELPERS DE PRECIO
+  ═══════════════════════════════════════════════ */
+  const getPrecioIngrediente = (ing) => {
+    if (ing.precio_por_tamano) {
+      return toNum(ing.precio_por_tamano[tamanoId]);
+    }
+    if (Array.isArray(ing.precios)) {
+      const p = ing.precios.find(
+        (pr) => Number(pr.tamano_id) === Number(tamanoId),
+      );
+      return toNum(p?.precio);
+    }
+    return 0;
+  };
+
+  const getPrecioBasePizza = () => {
+    if (!pizzaSeleccionada) return 0;
+    if (pizzaSeleccionada.tamanos) {
+      const t = pizzaSeleccionada.tamanos.find(
+        (t) => Number(t.tamano_id) === Number(tamanoId),
+      );
+      if (t) return toNum(t.precio);
+    }
+    if (detalle?.tamanos) {
+      const t = detalle.tamanos.find((t) => Number(t.id) === Number(tamanoId));
+      if (t) return toNum(t.precio);
+    }
+    return 0;
+  };
+
+  /* ═══════════════════════════════════════════════
+     ACCIONES
+  ═══════════════════════════════════════════════ */
   const aumentar = (ing) => {
+    const max = ing.max_cantidad ?? 3;
     setIngredientes((prev) =>
       prev.map((i) =>
-        i.id === ing.id && i.cantidad < 3
+        i.id === ing.id && i.cantidad < max
           ? { ...i, cantidad: i.cantidad + 1 }
-          : i
-      )
+          : i,
+      ),
     );
   };
 
@@ -81,125 +100,126 @@ export default function PizzaExistenteSelector({ tamaño, onSelect }) {
       prev.map((i) =>
         i.id === ing.id && i.cantidad > 0
           ? { ...i, cantidad: i.cantidad - 1 }
-          : i
-      )
+          : i,
+      ),
     );
   };
 
-  /* ===============================
-     CÁLCULO DE PRECIOS
-  =============================== */
+  const toggleBase = (ing) => {
+    setIngredientes((prev) =>
+      prev.map((i) =>
+        i.id === ing.id ? { ...i, cantidad: i.cantidad > 0 ? 0 : 1 } : i,
+      ),
+    );
+  };
+
+  const quitarExtra = (id) => {
+    setIngredientes((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        return { ...i, cantidad: i.incluido ? 1 : 0 };
+      }),
+    );
+  };
+
+  /* ═══════════════════════════════════════════════
+     DERIVADOS
+  ═══════════════════════════════════════════════ */
   const precioExtras = useMemo(() => {
     return ingredientes.reduce((acc, ing) => {
       const cobrables = ing.incluido
         ? Math.max(0, ing.cantidad - 1)
         : ing.cantidad;
-
       if (cobrables === 0) return acc;
-
-      const precio =
-        tamaño === "Mediana"
-          ? toNum(ing.precios.mediana)
-          : toNum(ing.precios.grande);
-
-      return acc + precio * cobrables;
+      return acc + getPrecioIngrediente(ing) * cobrables;
     }, 0);
-  }, [ingredientes, tamaño]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ingredientes, tamanoId]);
 
-  /* ===============================
-     EMITIR PAYLOAD (ANTI LOOP)
-  =============================== */
+  const extrasAnadidos = ingredientes.filter(
+    (i) => (!i.incluido && i.cantidad > 0) || (i.incluido && i.cantidad > 1),
+  );
+
+  const baseQuitados = ingredientes.filter(
+    (i) => i.incluido && i.cantidad === 0,
+  );
+
+  /* ═══════════════════════════════════════════════
+     EMITIR PAYLOAD (anti-loop)
+  ═══════════════════════════════════════════════ */
   const lastPayloadRef = useRef(null);
+
   useEffect(() => {
-    if (!pizzaSeleccionada || !detalle) return;
+    if (!pizzaSeleccionada) {
+      if (lastPayloadRef.current !== null) {
+        lastPayloadRef.current = null;
+        onSelect(null);
+      }
+      return;
+    }
+    if (!detalle) return;
 
-    const precioBase =
-      tamaño === "Mediana"
-        ? toNum(pizzaSeleccionada.precios.mediana)
-        : toNum(pizzaSeleccionada.precios.grande);
+    const precioBase = getPrecioBasePizza();
 
-    // 👉 INGREDIENTES EXTRAS (solo cambios reales)
     const ingredientesExtras = ingredientes
       .filter(
-        (i) => (!i.incluido && i.cantidad > 0) || (i.incluido && i.cantidad > 1)
+        (i) =>
+          (!i.incluido && i.cantidad > 0) || (i.incluido && i.cantidad > 1),
       )
       .map((i) => ({
         id: i.id,
         nombre: i.nombre,
         cantidad: i.incluido ? i.cantidad - 1 : i.cantidad,
+        precioUnitario: getPrecioIngrediente(i),
       }));
 
-    // 👉 INGREDIENTES QUITADOS
     const ingredientesQuitados = ingredientes
       .filter((i) => i.incluido && i.cantidad === 0)
-      .map((i) => ({
-        id: i.id,
-        nombre: i.nombre,
-      }));
+      .map((i) => ({ id: i.id, nombre: i.nombre }));
 
     const payload = {
       modo: "existente",
       articuloId: pizzaSeleccionada.id,
+      tipoProductoId:
+        pizzaSeleccionada.tipo_producto_id ?? detalle.tipo_producto_id,
       nombre: pizzaSeleccionada.nombre,
-
+      tamanoId,
       precioBase,
       precioExtras,
-
+      precioTotal: precioBase + precioExtras,
       ingredientesExtras,
       ingredientesQuitados,
     };
 
-    if (JSON.stringify(lastPayloadRef.current) !== JSON.stringify(payload)) {
-      lastPayloadRef.current = payload;
+    const key = JSON.stringify(payload);
+    if (lastPayloadRef.current !== key) {
+      lastPayloadRef.current = key;
       onSelect(payload);
     }
-  }, [
-    pizzaSeleccionada,
-    ingredientes,
-    precioExtras,
-    tamaño,
-    onSelect,
-    detalle,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pizzaSeleccionada, ingredientes, precioExtras, tamanoId, detalle]);
 
-  /* Quitar ingredientes seleccionados */
-  const quitarIngredienteAnadido = (ing) => {
-    setIngredientes((prev) =>
-      prev.map((i) => {
-        if (i.id !== ing.id) return i;
-
-        // Si era ingrediente base → volver a 1
-        if (i.incluido) {
-          return { ...i, cantidad: 1 };
-        }
-
-        // Si era extra → eliminar
-        return { ...i, cantidad: 0 };
-      })
-    );
-  };
-
-  /* ===============================
+  /* ═══════════════════════════════════════════════
      RENDER
-  =============================== */
+  ═══════════════════════════════════════════════ */
   if (isLoading) {
-    return (
-      <div className="text-center py-4 text-gray-500">Cargando pizzas…</div>
-    );
+    return <div className="text-center py-4 text-muted">Cargando pizzas…</div>;
   }
 
   if (!pizzas.length) {
     return (
-      <div className="border rounded-lg p-4 text-center text-gray-500">
+      <div className="alert alert-light border border-secondary-subtle py-3 px-4 text-center text-muted">
+        <i className="bi bi-info-circle me-1" />
         No hay pizzas disponibles.
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       <hr />
-      {/* LISTADO DE PIZZAS */}
+
+      {/* ── LISTADO DE PIZZAS ── */}
       <div className="d-flex flex-wrap gap-2">
         {pizzas.map((pizza) => {
           const active = pizzaSeleccionada?.id === pizza.id;
@@ -209,36 +229,29 @@ export default function PizzaExistenteSelector({ tamaño, onSelect }) {
               key={pizza.id}
               type="button"
               onClick={() => {
+                if (pizzaSeleccionada?.id === pizza.id) {
+                  setPizzaSeleccionada(null);
+                  setIngredientes([]);
+                  lastPayloadRef.current = null;
+                  return;
+                }
                 setPizzaSeleccionada(pizza);
                 setIngredientes([]);
                 lastPayloadRef.current = null;
               }}
-              className={`
-          d-inline-flex align-items-center gap-2
-          px-3 py-2
-          rounded-pill border small fw-semibold
-          transition
-          ${
-            active
-              ? "border-danger bg-danger bg-opacity-10 text-danger shadow-sm"
-              : "border-secondary-subtle bg-white text-dark"
-          }
-        `}
+              className={`d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill border small fw-semibold ${
+                active
+                  ? "border-danger bg-danger bg-opacity-10 text-danger shadow-sm"
+                  : "border-secondary-subtle bg-white text-dark"
+              }`}
             >
-              {/* Nombre */}
               <span className="text-nowrap">{pizza.nombre}</span>
-
-              {/* Check */}
               <span
-                className={`
-            d-flex align-items-center justify-content-center
-            rounded-circle
-            ${
-              active
-                ? "bg-danger text-white"
-                : "border border-secondary text-transparent"
-            }
-          `}
+                className={`d-flex align-items-center justify-content-center rounded-circle ${
+                  active
+                    ? "bg-danger text-white"
+                    : "border border-secondary text-transparent"
+                }`}
                 style={{ width: 18, height: 18, fontSize: 11 }}
               >
                 ✓
@@ -247,7 +260,8 @@ export default function PizzaExistenteSelector({ tamaño, onSelect }) {
           );
         })}
       </div>
-      {/* PAGINACIÓN */}
+
+      {/* ── PAGINACIÓN ── */}
       {lastPage > 1 && (
         <div className="mt-3 d-flex align-items-center gap-2 mb-4">
           <button
@@ -257,13 +271,11 @@ export default function PizzaExistenteSelector({ tamaño, onSelect }) {
             className="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center"
             style={{ width: 32, height: 32 }}
           >
-            <i className="bi bi-chevron-left"></i>
+            <i className="bi bi-chevron-left" />
           </button>
-
           <span className="small text-secondary fw-semibold">
             Página {currentPage} de {lastPage}
           </span>
-
           <button
             type="button"
             disabled={currentPage === lastPage}
@@ -271,162 +283,186 @@ export default function PizzaExistenteSelector({ tamaño, onSelect }) {
             className="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center"
             style={{ width: 32, height: 32 }}
           >
-            <i className="bi bi-chevron-right"></i>
+            <i className="bi bi-chevron-right" />
           </button>
         </div>
       )}
-      <hr />
 
-      {/* INGREDIENTES BASE */}
-      <div className="mb-4">
-        <h6 className="fw-bold text-uppercase color-primario mb-3">
-          Ingredientes base
-        </h6>
+      {/* ── Contenido cuando hay pizza seleccionada ── */}
+      {pizzaSeleccionada && detalle && !loadingDetalle && (
+        <>
+          <hr />
 
-        {ingredientes.filter((i) => i.incluido).length === 0 ? (
-          <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted">
-            <i className="bi bi-info-circle me-1"></i>
-            Selecciona primero un tipo de pizza para poder ver y modificar los
-            ingredientes base.
+          {/* ── Ingredientes base ── */}
+          <div className="mb-4">
+            <h6 className="fw-semibold mb-2">Ingredientes base</h6>
+
+            {ingredientes.filter((i) => i.incluido).length === 0 ? (
+              <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted">
+                <i className="bi bi-info-circle me-1" />
+                Esta pizza no tiene ingredientes base.
+              </div>
+            ) : (
+              <div className="d-flex flex-wrap gap-2">
+                {ingredientes
+                  .filter((i) => i.incluido)
+                  .map((ing) => {
+                    const desactivado = ing.cantidad === 0;
+
+                    return (
+                      <span
+                        key={ing.id}
+                        onClick={() => toggleBase(ing)}
+                        className={`badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center ${
+                          desactivado
+                            ? "bg-secondary-subtle text-muted border border-secondary-subtle"
+                            : "bg-light text-dark border"
+                        }`}
+                        style={{
+                          cursor: "pointer",
+                          userSelect: "none",
+                          transition: "all 0.2s ease",
+                        }}
+                        title={
+                          desactivado ? "Clic para añadir" : "Clic para quitar"
+                        }
+                      >
+                        <i
+                          className={`bi me-1 ${
+                            desactivado
+                              ? "bi-x-circle text-secondary"
+                              : "bi-check-circle-fill color-secundario"
+                          }`}
+                        />
+                        {ing.nombre}
+                      </span>
+                    );
+                  })}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="d-flex flex-wrap gap-2">
-            {ingredientes
-              .filter((i) => i.incluido)
-              .map((ing) => {
-                const desactivado = ing.cantidad === 0;
 
-                return (
+          {/* ── Ingredientes quitados ── */}
+          {baseQuitados.length > 0 && (
+            <div className="mb-4">
+              <h6 className="fw-semibold mb-2 text-muted">
+                <i className="bi bi-dash-circle me-1" />
+                Ingredientes quitados
+              </h6>
+
+              <div className="d-flex flex-wrap gap-2">
+                {baseQuitados.map((ing) => (
                   <span
                     key={ing.id}
-                    onClick={() =>
-                      setIngredientes((prev) =>
-                        prev.map((i) =>
-                          i.id === ing.id
-                            ? { ...i, cantidad: i.cantidad === 0 ? 1 : 0 }
-                            : i
-                        )
-                      )
-                    }
-                    className={`
-                badge rounded-pill px-3 py-2 shadow-sm
-                d-flex align-items-center
-                ${
-                  desactivado
-                    ? "bg-secondary-subtle text-muted border-secondary-subtle"
-                    : "bg-light text-dark border"
-                }
-              `}
+                    onClick={() => toggleBase(ing)}
+                    className="badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center bg-danger-subtle text-muted border border-danger-subtle"
                     style={{
                       cursor: "pointer",
                       userSelect: "none",
                       transition: "all 0.2s ease",
+                      textDecoration: "line-through",
                     }}
+                    title="Clic para restaurar"
                   >
-                    <i
-                      className={`bi me-1 ${
-                        desactivado
-                          ? "bi-x-circle text-secondary"
-                          : "bi-check-circle-fill color-secundario"
-                      }`}
-                    ></i>
-
+                    <i className="bi bi-arrow-counterclockwise me-1 text-success" />
                     {ing.nombre}
                   </span>
-                );
-              })}
-          </div>
-        )}
-      </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-      <hr />
+          {/* ── Extras añadidos (resumen) ── */}
+          {extrasAnadidos.length > 0 && (
+            <div className="mb-4">
+              <hr />
+              <h6 className="fw-semibold mb-2">Ingredientes añadidos:</h6>
 
-      {/* INGREDIENTES AÑADIDOS */}
-      {ingredientes.some(
-        (i) => (i.incluido && i.cantidad > 1) || (!i.incluido && i.cantidad > 0)
-      ) && (
-        <div className="mt-4 mb-4">
-          <h6 className="fw-bold text-uppercase text-secondary mb-2">
-            Ingredientes añadidos
-          </h6>
+              <div className="d-flex flex-wrap gap-2">
+                {extrasAnadidos.map((ing) => {
+                  const cantidad = ing.incluido
+                    ? ing.cantidad - 1
+                    : ing.cantidad;
 
-          <div className="d-flex flex-wrap gap-2">
-            {ingredientes
-              .filter(
-                (i) =>
-                  (i.incluido && i.cantidad > 1) ||
-                  (!i.incluido && i.cantidad > 0)
-              )
-              .map((ing) => {
-                const cantidad = ing.incluido ? ing.cantidad - 1 : ing.cantidad;
-
-                return (
-                  <span
-                    key={ing.id}
-                    className="d-flex align-items-center gap-2 py-2 px-3 rounded-pill border shadow-sm"
-                    style={{
-                      fontSize: "0.9rem",
-                      backgroundColor: "rgba(25, 135, 84, 0.08)", // verde suave
-                      borderColor: "rgba(255, 193, 7, 0.45)", // amarillo tenue
-                    }}
-                  >
-                    {/* Nombre */}
-                    <span className="fw-medium text-dark text-nowrap">
-                      {ing.nombre}
-                    </span>
-
-                    {/* Cantidad */}
-                    <span className="badge bg-light text-success fw-semibold">
-                      ×{cantidad}
-                    </span>
-
-                    {/* Quitar */}
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-link p-0 m-0 text-danger"
-                      onClick={() => quitarIngredienteAnadido(ing)}
-                      style={{ lineHeight: 1 }}
+                  return (
+                    <span
+                      key={ing.id}
+                      className="ingrediente-extra d-flex align-items-center gap-2 py-2 px-3 border rounded-pill bg-light shadow-sm"
+                      style={{ fontSize: "0.9rem" }}
                     >
-                      <i className="bi bi-x-circle-fill"></i>
-                    </button>
-                  </span>
-                );
-              })}
-          </div>
-        </div>
-      )}
+                      <span className="fw-medium">{ing.nombre}</span>
 
-      {/* DETALLE */}
-      {pizzaSeleccionada && detalle && !loadingDetalle && (
-        <Tabs
-          activeKey={tabActiva}
-          onSelect={(k) => setTabActiva(k)}
-          className="mb-3 scrollable-tabs"
-        >
-          {categorias.map((cat) =>
-            (detalle.ingredientes[cat] || []).length ? (
-              <Tab eventKey={cat} title={formatCategoria(cat)} key={cat}>
+                      <span className="badge bg-light color-primario ms-1">
+                        ×{cantidad}
+                      </span>
+
+                      <button
+                        className="btn btn-sm btn-link p-0 m-0 text-danger"
+                        onClick={() => quitarExtra(ing.id)}
+                        style={{ textDecoration: "none" }}
+                      >
+                        <i className="bi bi-x-circle-fill" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <hr />
+
+          {/* ── Selector por categorías (Tabs) ── */}
+          <h6 className="fw-semibold mb-3">Agregar ingredientes</h6>
+
+          <Tabs
+            defaultActiveKey={Object.keys(detalle.ingredientes)[0]}
+            className="mb-3 scrollable-tabs"
+          >
+            {Object.entries(detalle.ingredientes).map(([categoria, items]) => (
+              <Tab eventKey={categoria} title={categoria} key={categoria}>
                 <div className="list-group shadow-sm rounded-3">
-                  {(detalle.ingredientes[cat] || []).map((ing) => {
+                  {items.map((ing) => {
                     const actual = ingredientes.find((i) => i.id === ing.id);
                     const cantidad = actual?.cantidad ?? 0;
+
+                    const cantidadExtra = ing.incluido
+                      ? Math.max(0, cantidad - 1)
+                      : cantidad;
+
+                    const quitado = ing.incluido && cantidad === 0;
+                    const precio = getPrecioIngrediente(ing);
+                    const max = ing.max_cantidad ?? 3;
 
                     return (
                       <div
                         key={ing.id}
                         className={`list-group-item d-flex justify-content-between align-items-center ${
-                          cantidad > 0 ? "bg-success-subtle" : "bg-white"
+                          ing.incluido && quitado
+                            ? "bg-danger-subtle"
+                            : cantidad > 0
+                              ? "bg-success-subtle"
+                              : "bg-white"
                         }`}
                       >
-                        {/* Nombre */}
-                        <span className="fw-semibold text-dark">
-                          {ing.nombre}
-                        </span>
+                        <div className="d-flex flex-column">
+                          <span className="fw-semibold text-dark">
+                            {ing.nombre}
+                          </span>
+                          {ing.incluido ? (
+                            <small className="text-muted">
+                              Ingrediente base
+                            </small>
+                          ) : (
+                            <small className="text-muted">
+                              +{precio.toFixed(2)} € / unidad
+                            </small>
+                          )}
+                        </div>
 
-                        {/* Stepper – MISMO patrón */}
-                        <div className="btn-group btn-group-sm shadow-sm rounded-pill overflow-hidden">
+                        <div className="btn-group btn-group-sm rounded-pill overflow-hidden">
                           <button
-                            className="btn btn-light border-0 px-3 fw-bold text-secondary"
+                            className="btn btn-light"
                             onClick={() => disminuir(ing)}
                             disabled={cantidad === 0}
                           >
@@ -434,16 +470,16 @@ export default function PizzaExistenteSelector({ tamaño, onSelect }) {
                           </button>
 
                           <button
-                            className="btn btn-light border-start border-end px-3 fw-semibold text-dark"
+                            className="btn btn-light fw-semibold"
                             disabled
                           >
                             {cantidad}
                           </button>
 
                           <button
-                            className="btn btn-light border-0 px-3 fw-bold text-secondary"
+                            className="btn btn-light"
                             onClick={() => aumentar(ing)}
-                            disabled={cantidad === 3}
+                            disabled={cantidadExtra >= max}
                           >
                             +
                           </button>
@@ -453,9 +489,26 @@ export default function PizzaExistenteSelector({ tamaño, onSelect }) {
                   })}
                 </div>
               </Tab>
-            ) : null
-          )}
-        </Tabs>
+            ))}
+          </Tabs>
+        </>
+      )}
+
+      {/* Mensaje si no hay pizza seleccionada */}
+      {!pizzaSeleccionada && (
+        <>
+          <hr />
+          <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted text-center">
+            <i className="bi bi-hand-index me-1" />
+            Selecciona una pizza para ver y modificar sus ingredientes.
+          </div>
+        </>
+      )}
+
+      {pizzaSeleccionada && loadingDetalle && (
+        <div className="text-center py-4 text-muted">
+          Cargando ingredientes…
+        </div>
       )}
     </div>
   );

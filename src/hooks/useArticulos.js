@@ -12,15 +12,14 @@ export default function useArticulos(categoriaId = "", page = 1, search = "") {
       params.append("page", page);
 
       const { data } = await clientesAxios.get(
-        `/shop/articulos?${params.toString()}`
+        `/shop/articulos?${params.toString()}`,
       );
-
       return {
         articulos: data.data,
         meta: {
-          current_page: data.current_page,
-          last_page: data.last_page,
-          total: data.total,
+          current_page: data.meta.current_page,
+          last_page: data.meta.last_page,
+          total: data.meta.total,
         },
       };
     },

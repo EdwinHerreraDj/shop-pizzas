@@ -4,67 +4,65 @@ const CarritoContext = createContext();
 
 export function CarritoProvider({ children }) {
   const [carrito, setCarrito] = useState(() => {
-    // cargar desde localStorage al iniciar
     const stored = localStorage.getItem("carrito");
     return stored ? JSON.parse(stored) : [];
   });
 
-  // guardar en localStorage cada vez que cambie el carrito
   useEffect(() => {
     localStorage.setItem("carrito", JSON.stringify(carrito));
   }, [carrito]);
 
-  const generarClaveItem = (item) => {
-    return JSON.stringify({
+  /* ═══════════════════════════════════════════════
+     CLAVE ÚNICA — agrupa items idénticos
+     Dos items son iguales si: mismo tipo, artículo,
+     tamanoId, e ingredientes extras/quitados.
+  ═══════════════════════════════════════════════ */
+  const generarClave = (item) =>
+    JSON.stringify({
       tipo: item.tipo,
       articuloId: item.articuloId ?? null,
-      tamaño: item.tamaño ?? null,
+      tamanoId: item.tamanoId ?? null,
       ingredientesExtras: item.ingredientesExtras ?? [],
       ingredientesQuitados: item.ingredientesQuitados ?? [],
-      mitadA: item.mitadA ?? null,
-      mitadB: item.mitadB ?? null,
     });
-  };
 
-  // Agregar producto
+  /* ═══════════════════════════════════════════════
+     AGREGAR AL CARRITO
+  ═══════════════════════════════════════════════ */
   const agregarAlCarrito = (producto) => {
-    // Las pizzas por mitades SIEMPRE son únicas
+    // Pizzas por mitades son SIEMPRE únicas (no agrupar)
     if (producto.tipo === "pizza-mitades") {
       setCarrito((prev) => [
         ...prev,
-        {
-          ...producto,
-          uid: crypto.randomUUID(),
-          cantidad: 1,
-        },
+        { ...producto, uid: crypto.randomUUID(), cantidad: 1 },
       ]);
       return;
     }
 
-    // Para el resto, sí podemos agrupar
     setCarrito((prev) => {
-      const index = prev.findIndex(
-        (item) =>
-          item.tipo === producto.tipo &&
-          item.articuloId === producto.articuloId &&
-          item.tamaño === producto.tamaño &&
-          JSON.stringify(item.ingredientesExtras) ===
-            JSON.stringify(producto.ingredientesExtras) &&
-          JSON.stringify(item.ingredientesQuitados) ===
-            JSON.stringify(producto.ingredientesQuitados)
-      );
+      const claveNueva = generarClave(producto);
+      const index = prev.findIndex((it) => generarClave(it) === claveNueva);
 
       if (index !== -1) {
+        // Existe → incrementar cantidad + recalcular total
         const copia = [...prev];
+        const nuevaCantidad = copia[index].cantidad + 1;
+        const precioUnitario =
+          (Number(copia[index].precioBase) || 0) +
+          (Number(copia[index].precioExtras) || 0);
+
         copia[index] = {
           ...copia[index],
-          cantidad: copia[index].cantidad + 1,
-          precioTotal:
-            (copia[index].precioBase + copia[index].precioExtras) *
-            (copia[index].cantidad + 1),
+          cantidad: nuevaCantidad,
+          precioTotal: precioUnitario * nuevaCantidad,
         };
         return copia;
       }
+
+      // Nuevo item
+      const precioUnitario =
+        (Number(producto.precioBase) || 0) +
+        (Number(producto.precioExtras) || 0);
 
       return [
         ...prev,
@@ -72,29 +70,134 @@ export function CarritoProvider({ children }) {
           ...producto,
           uid: crypto.randomUUID(),
           cantidad: 1,
+          precioTotal: producto.precioTotal ?? precioUnitario,
         },
       ];
     });
   };
 
-  // Actualizar cantidad por índice
+  /* ═══════════════════════════════════════════════
+     ACTUALIZAR CANTIDAD
+  ═══════════════════════════════════════════════ */
   const actualizarCantidad = (index, nuevaCantidad) => {
+    if (nuevaCantidad < 1) return;
+
     setCarrito((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, cantidad: nuevaCantidad } : item
-      )
+      prev.map((item, i) => {
+        if (i !== index) return item;
+
+        // Para mitades el precioTotal no se descompone en base+extras
+        if (item.tipo === "pizza-mitades") {
+          const precioUnitario = item.precioTotal / item.cantidad;
+          return {
+            ...item,
+            cantidad: nuevaCantidad,
+            precioTotal: precioUnitario * nuevaCantidad,
+          };
+        }
+
+        const precioUnitario =
+          (Number(item.precioBase) || 0) + (Number(item.precioExtras) || 0);
+
+        return {
+          ...item,
+          cantidad: nuevaCantidad,
+          precioTotal: precioUnitario * nuevaCantidad,
+        };
+      }),
     );
   };
 
-  // Eliminar producto por índice
+  /* ═══════════════════════════════════════════════
+     ELIMINAR / VACIAR
+  ═══════════════════════════════════════════════ */
   const eliminarItem = (index) => {
     setCarrito((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Vaciar carrito
   const vaciarCarrito = () => {
     setCarrito([]);
     localStorage.removeItem("carrito");
+  };
+
+  /* ═══════════════════════════════════════════════
+     TOTALES
+  ═══════════════════════════════════════════════ */
+  const totalCarrito = carrito.reduce(
+    (acc, item) => acc + (Number(item.precioTotal) || 0),
+    0,
+  );
+
+  const totalItems = carrito.reduce(
+    (acc, item) => acc + (item.cantidad || 0),
+    0,
+  );
+
+  /* ═══════════════════════════════════════════════
+     PREPARAR PAYLOAD PARA BACKEND
+     Estructura limpia lista para POST /api/pedidos
+  ═══════════════════════════════════════════════ */
+  const prepararPedido = () => {
+    const mapExtras = (extras = []) =>
+      extras.map((ing) => ({
+        ingredienteId: ing.ingredienteId ?? ing.id,
+        cantidad: ing.cantidad || 1,
+      }));
+
+    const mapQuitados = (quitados = []) =>
+      quitados.map((ing) => ({
+        ingredienteId: ing.ingredienteId ?? ing.id,
+      }));
+
+    const items = carrito.map((item) => {
+      if (item.tipo === "articulo" || item.tipo === "pizza-entera") {
+        return {
+          tipo: "articulo",
+          articuloId: item.articuloId,
+          tamanoId: item.tamanoId ?? null,
+          cantidad: item.cantidad,
+          ingredientesExtras: mapExtras(item.ingredientesExtras),
+          ingredientesQuitados: mapQuitados(item.ingredientesQuitados),
+        };
+      }
+
+      if (item.tipo === "pizza-mitades") {
+        return {
+          tipo: "pizza-mitades",
+          cantidad: item.cantidad,
+          mitades: {
+            mitadA: {
+              articuloId: item.mitades?.mitadA?.articuloId,
+              tamanoId: item.tamanoId,
+              ingredientesExtras: mapExtras(
+                item.mitades?.mitadA?.ingredientesExtras,
+              ),
+              ingredientesQuitados: mapQuitados(
+                item.mitades?.mitadA?.ingredientesQuitados,
+              ),
+            },
+            mitadB: {
+              articuloId: item.mitades?.mitadB?.articuloId,
+              tamanoId: item.tamanoId,
+              ingredientesExtras: mapExtras(
+                item.mitades?.mitadB?.ingredientesExtras,
+              ),
+              ingredientesQuitados: mapQuitados(
+                item.mitades?.mitadB?.ingredientesQuitados,
+              ),
+            },
+          },
+        };
+      }
+
+      return {
+        tipo: item.tipo,
+        cantidad: item.cantidad,
+      };
+    });
+
+    console.log("ITEMS PREPARADOS", items);
+    return items;
   };
 
   return (
@@ -105,6 +208,9 @@ export function CarritoProvider({ children }) {
         eliminarItem,
         vaciarCarrito,
         actualizarCantidad,
+        totalCarrito,
+        totalItems,
+        prepararPedido,
       }}
     >
       {children}

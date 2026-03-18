@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { Modal, Spinner, Tabs, Tab } from "react-bootstrap";
 import useIngredientesConPrecios from "../../hooks/useIngredientesConPrecios";
-import { Modal, Spinner } from "react-bootstrap";
 
 const toNum = (v) => Number.parseFloat(v ?? 0) || 0;
 
@@ -9,9 +9,6 @@ const formatEUR = (v) =>
     style: "currency",
     currency: "EUR",
   }).format(Number.isFinite(v) ? v : 0);
-
-const formatCategoria = (key) =>
-  key?.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
 export default function ModalPersonalizar({
   productoId,
@@ -23,19 +20,13 @@ export default function ModalPersonalizar({
 
   const [tamanoSeleccionado, setTamanoSeleccionado] = useState(null);
   const [ingredientes, setIngredientes] = useState([]);
-  const [categoriaActiva, setCategoriaActiva] = useState(null);
 
   const tamanos = useMemo(() => data?.tamanos ?? [], [data?.tamanos]);
   const esPrecioUnico = tamanos.length <= 1;
 
-  useEffect(() => {
-    if (!show || !tamanos.length) return;
-    setTamanoSeleccionado(tamanos[0]);
-  }, [show, tamanos]);
-
   const ingredientesAgrupados = useMemo(
     () => data?.ingredientes ?? {},
-    [data?.ingredientes],
+    [data?.ingredientes]
   );
 
   const ingredientesBase = useMemo(
@@ -43,8 +34,14 @@ export default function ModalPersonalizar({
       Object.values(ingredientesAgrupados)
         .flat()
         .filter((i) => i.modo === "base"),
-    [ingredientesAgrupados],
+    [ingredientesAgrupados]
   );
+
+  /* ── Init on show ──────────────────────────────── */
+  useEffect(() => {
+    if (!show || !tamanos.length) return;
+    setTamanoSeleccionado(tamanos[0]);
+  }, [show, tamanos]);
 
   useEffect(() => {
     if (!show || !data?.ingredientes) return;
@@ -57,75 +54,120 @@ export default function ModalPersonalizar({
       }));
 
     setIngredientes(inicial);
-    setCategoriaActiva(Object.keys(data.ingredientes)[0] ?? null);
   }, [show, data]);
 
+  /* ── Precios ───────────────────────────────────── */
   const precioBase = useMemo(
     () => (tamanoSeleccionado ? toNum(tamanoSeleccionado.precio) : 0),
-    [tamanoSeleccionado],
+    [tamanoSeleccionado]
   );
+
+  const getPrecioExtra = (ing) => {
+    if (!tamanoSeleccionado) return 0;
+    return toNum(ing.precio_por_tamano?.[tamanoSeleccionado.id] ?? 0);
+  };
 
   const precioExtras = useMemo(() => {
     return ingredientes.reduce((acc, ing) => {
       if (!tamanoSeleccionado) return acc;
-
-      const precioExtra = toNum(
-        ing.precios?.find((p) => p.tamano_id === tamanoSeleccionado.id)
-          ?.precio ?? 0,
+      const precio = toNum(
+        ing.precio_por_tamano?.[tamanoSeleccionado.id] ?? 0
       );
-
-      const unidadesDePago =
+      const cobrables =
         ing.modo === "base" ? Math.max(ing.cantidad - 1, 0) : ing.cantidad;
-
-      return acc + precioExtra * unidadesDePago;
+      return acc + precio * cobrables;
     }, 0);
   }, [ingredientes, tamanoSeleccionado]);
 
   const precioTotal = precioBase + precioExtras;
 
-  const cambiarCantidad = (id, delta) => {
+  /* ── Acciones ──────────────────────────────────── */
+  const aumentar = (ing) => {
+    const max = ing.max_cantidad ?? 3;
+    setIngredientes((prev) =>
+      prev.map((i) =>
+        i.id === ing.id && i.cantidad < max
+          ? { ...i, cantidad: i.cantidad + 1 }
+          : i
+      )
+    );
+  };
+
+  const disminuir = (ing) => {
+    setIngredientes((prev) =>
+      prev.map((i) =>
+        i.id === ing.id && i.cantidad > 0
+          ? { ...i, cantidad: i.cantidad - 1 }
+          : i
+      )
+    );
+  };
+
+  const toggleBase = (ing) => {
+    setIngredientes((prev) =>
+      prev.map((i) =>
+        i.id === ing.id ? { ...i, cantidad: i.cantidad > 0 ? 0 : 1 } : i
+      )
+    );
+  };
+
+  const quitarExtra = (id) => {
     setIngredientes((prev) =>
       prev.map((i) => {
         if (i.id !== id) return i;
-
-        const nueva = i.cantidad + delta;
-        if (nueva < 0) return { ...i, cantidad: 0 };
-        if (nueva > (i.max_cantidad ?? 3)) return i;
-
-        return { ...i, cantidad: nueva };
-      }),
+        return { ...i, cantidad: i.modo === "base" ? 1 : 0 };
+      })
     );
   };
 
-  const toggleBase = (id) => {
-    setIngredientes((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, cantidad: i.cantidad > 0 ? 0 : 1 } : i,
-      ),
-    );
-  };
-
-  const getPrecioExtra = (ing) => {
-    if (!tamanoSeleccionado) return 0;
-    return toNum(
-      ing.precios?.find((p) => p.tamano_id === tamanoSeleccionado.id)?.precio ??
-        0,
-    );
-  };
-
-  const categorias = Object.keys(ingredientesAgrupados);
-
-  const extrasEnCategoria = (cat) =>
-    (ingredientesAgrupados[cat] ?? []).reduce((sum, ing) => {
-      if (ing.modo === "base") return sum;
-      return sum + (ingredientes.find((i) => i.id === ing.id)?.cantidad ?? 0);
-    }, 0);
-
-  // Extras que el usuario ha añadido (modo !== "base" y cantidad > 0)
-  const extrasSeleccionados = ingredientes.filter(
-    (i) => i.modo !== "base" && i.cantidad > 0,
+  /* ── Derivados ─────────────────────────────────── */
+  const extrasAnadidos = ingredientes.filter(
+    (i) =>
+      (i.modo !== "base" && i.cantidad > 0) ||
+      (i.modo === "base" && i.cantidad > 1)
   );
 
+  const baseQuitados = ingredientes.filter(
+    (i) => i.modo === "base" && i.cantidad === 0
+  );
+
+  /* ── Confirmar ─────────────────────────────────── */
+  const handleConfirmar = () => {
+    const ingredientesExtras = ingredientes
+      .filter(
+        (i) =>
+          (i.modo !== "base" && i.cantidad > 0) ||
+          (i.modo === "base" && i.cantidad > 1)
+      )
+      .map((i) => ({
+        id: i.id,
+        nombre: i.nombre,
+        cantidad: i.modo === "base" ? i.cantidad - 1 : i.cantidad,
+        precioUnitario: getPrecioExtra(i),
+      }));
+
+    const ingredientesQuitados = ingredientes
+      .filter((i) => i.modo === "base" && i.cantidad === 0)
+      .map((i) => ({ id: i.id, nombre: i.nombre }));
+
+    onConfirm({
+      tipo: "articulo",
+      articuloId: data.id,
+      tipoProductoId: data.tipo_producto_id,
+      nombre: data.nombre,
+      tamanoId: tamanoSeleccionado?.id ?? null,
+      tamano: tamanoSeleccionado?.nombre ?? null,
+      cantidad: 1,
+      precioBase,
+      precioExtras,
+      precioTotal,
+      ingredientesExtras,
+      ingredientesQuitados,
+    });
+    onClose();
+  };
+
+  /* ── Render ────────────────────────────────────── */
   return (
     <Modal show={show} onHide={onClose} size="lg" backdrop="static" centered>
       <Modal.Header closeButton className="border-0 pb-2">
@@ -150,41 +192,39 @@ export default function ModalPersonalizar({
             Ocurrió un error al cargar el artículo.
           </div>
         )}
-        {!isLoading && !isError && (
+
+        {!isLoading && !isError && data && (
           <>
+            {/* ── Imagen ── */}
             <div className="text-center mb-4">
               <img
                 src={data?.imagen ?? ""}
                 alt={data?.nombre ?? "Producto"}
                 className="img-fluid rounded-4 shadow-sm"
-                style={{
-                  maxHeight: "220px",
-                  objectFit: "cover",
-                }}
+                style={{ maxHeight: "220px", objectFit: "cover" }}
               />
             </div>
 
             {data?.descripcion && (
               <p className="text-muted mb-4">{data.descripcion}</p>
             )}
+
             <hr />
+
+            {/* ── Tamaño ── */}
             {!esPrecioUnico && (
-              <div className="mb-4">
-                <h6 className="fw-bold text-uppercase color-primary small mb-3">
-                  Tamaño
-                </h6>
+              <>
+                <div className="mb-4">
+                  <h6 className="fw-semibold mb-2">Tamaño</h6>
 
-                <div className="d-flex flex-wrap gap-2">
-                  {tamanos.map((t) => {
-                    const activo = tamanoSeleccionado?.id === t.id;
-
-                    return (
+                  <div className="d-flex flex-wrap gap-2">
+                    {tamanos.map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         onClick={() => setTamanoSeleccionado(t)}
                         className={`theme-btn style6 ${
-                          tamanoSeleccionado === t
+                          tamanoSeleccionado?.id === t.id
                             ? "btn-primary text-red-50"
                             : "btn-outline-primary bg-white"
                         }`}
@@ -192,92 +232,6 @@ export default function ModalPersonalizar({
                         <span className="fw-semibold">{t.nombre}</span>
                         <span className="ms-2 small opacity-75">
                           {formatEUR(toNum(t.precio))}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <hr />
-
-            {ingredientesBase.length > 0 && (
-              <div className="mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h6 className="fw-bold mb-0">Ingredientes base</h6>
-                  <small className="color-primario">Toca para quitar</small>
-                </div>
-
-                <div className="d-flex flex-wrap gap-2">
-                  {ingredientesBase.map((ing) => {
-                    const activo =
-                      (ingredientes.find((i) => i.id === ing.id)?.cantidad ??
-                        0) > 0;
-
-                    return (
-                      <button
-                        key={ing.id}
-                        type="button"
-                        onClick={() => toggleBase(ing.id)}
-                        className={`btn btn-sm rounded-pill px-3 ${
-                          activo
-                            ? "btn-outline-success fw-semibold"
-                            : "btn-light border text-muted"
-                        }`}
-                      >
-                        {activo && <span className="me-1">✓</span>}
-                        {ing.nombre}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <hr />
-
-            {/* ── Resumen de extras añadidos ── */}
-            {extrasSeleccionados.length > 0 && (
-              <>
-                <div className="mb-4">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h6 className="fw-bold mb-0">Extras añadidos</h6>
-                    <small className="text-muted">Toca para quitar</small>
-                  </div>
-
-                  <div className="d-flex flex-wrap gap-2">
-                    {extrasSeleccionados.map((ing) => (
-                      <button
-                        key={ing.id}
-                        type="button"
-                        onClick={() =>
-                          setIngredientes((prev) =>
-                            prev.map((i) =>
-                              i.id === ing.id ? { ...i, cantidad: 0 } : i,
-                            ),
-                          )
-                        }
-                        className="d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 bg-danger bg-opacity-10 border border-danger btn"
-                        style={{ fontSize: "0.85rem" }}
-                        title="Toca para quitar"
-                      >
-                        <span className="fw-semibold color-secundario">
-                          {ing.nombre}
-                        </span>
-                        {ing.cantidad > 1 && (
-                          <span
-                            className="badge bg-danger text-white rounded-pill"
-                            style={{ fontSize: "0.75rem" }}
-                          >
-                            x{ing.cantidad}
-                          </span>
-                        )}
-                        <span
-                          className="color-secundario ms-1"
-                          style={{ fontSize: "0.8rem", lineHeight: 1 }}
-                        >
-                          ✕
                         </span>
                       </button>
                     ))}
@@ -288,97 +242,209 @@ export default function ModalPersonalizar({
               </>
             )}
 
-            {categorias.length > 0 && (
-              <div>
-                <h6 className="fw-bold text-uppercase color-primary small mb-3">
-                  Añadir extras
-                </h6>
+            {/* ── Ingredientes base ── */}
+            {ingredientesBase.length > 0 && (
+              <div className="mb-4">
+                <h6 className="fw-semibold mb-2">Ingredientes base</h6>
 
-                <ul className="nav nav-pills flex-wrap gap-2 mb-4">
-                  {categorias.map((cat) => {
-                    const count = extrasEnCategoria(cat);
+                <div className="d-flex flex-wrap gap-2">
+                  {ingredientesBase.map((ing) => {
+                    const actual = ingredientes.find((i) => i.id === ing.id);
+                    const desactivado = (actual?.cantidad ?? 0) === 0;
 
                     return (
-                      <li key={cat} className="nav-item">
-                        <button
-                          className={`btn rounded-pill ${
-                            categoriaActiva === cat
-                              ? "btn-danger"
-                              : "btn-outline-danger"
+                      <span
+                        key={ing.id}
+                        onClick={() => toggleBase(ing)}
+                        className={`badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center ${
+                          desactivado
+                            ? "bg-secondary-subtle text-muted border border-secondary-subtle"
+                            : "bg-light text-dark border"
+                        }`}
+                        style={{
+                          cursor: "pointer",
+                          userSelect: "none",
+                          transition: "all 0.2s ease",
+                        }}
+                        title={
+                          desactivado
+                            ? "Clic para añadir"
+                            : "Clic para quitar"
+                        }
+                      >
+                        <i
+                          className={`bi me-1 ${
+                            desactivado
+                              ? "bi-x-circle text-secondary"
+                              : "bi-check-circle-fill color-secundario"
                           }`}
-                          onClick={() => setCategoriaActiva(cat)}
-                        >
-                          {formatCategoria(cat)}
-                          {count > 0 && (
-                            <span className="badge bg-light color-secundario ms-2">
-                              {count}
-                            </span>
-                          )}
-                        </button>
-                      </li>
+                        />
+                        {ing.nombre}
+                      </span>
                     );
                   })}
-                </ul>
+                </div>
+              </div>
+            )}
 
-                {(ingredientesAgrupados[categoriaActiva] ?? []).map((ing) => {
-                  const cant =
-                    ingredientes.find((i) => i.id === ing.id)?.cantidad ?? 0;
+            {/* ── Ingredientes quitados ── */}
+            {baseQuitados.length > 0 && (
+              <div className="mb-4">
+                <h6 className="fw-semibold mb-2 text-muted">
+                  <i className="bi bi-dash-circle me-1" />
+                  Ingredientes quitados
+                </h6>
 
-                  const precio = getPrecioExtra(ing);
-
-                  const max = ing.max_cantidad ?? 3;
-
-                  return (
-                    <div
+                <div className="d-flex flex-wrap gap-2">
+                  {baseQuitados.map((ing) => (
+                    <span
                       key={ing.id}
-                      className="d-flex justify-content-between align-items-center py-3 border-bottom"
+                      onClick={() => toggleBase(ing)}
+                      className="badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center bg-danger-subtle text-muted border border-danger-subtle"
+                      style={{
+                        cursor: "pointer",
+                        userSelect: "none",
+                        transition: "all 0.2s ease",
+                        textDecoration: "line-through",
+                      }}
+                      title="Clic para restaurar"
                     >
-                      <div>
-                        <div className="fw-semibold">{ing.nombre}</div>
-                        {precio > 0 && (
-                          <div className="small text-muted">
-                            +{formatEUR(precio)}
-                          </div>
-                        )}
-                      </div>
+                      <i className="bi bi-arrow-counterclockwise me-1 text-success" />
+                      {ing.nombre}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                      <div
-                        className={`d-inline-flex align-items-center rounded-pill px-2 py-1 ${
-                          cant > 0
-                            ? "bg-danger bg-opacity-10 border border-danger"
-                            : "bg-light border"
-                        }`}
+            {/* ── Extras añadidos (resumen) ── */}
+            {extrasAnadidos.length > 0 && (
+              <div className="mb-4">
+                <hr />
+                <h6 className="fw-semibold mb-2">Ingredientes añadidos:</h6>
+
+                <div className="d-flex flex-wrap gap-2">
+                  {extrasAnadidos.map((ing) => {
+                    const cantidad =
+                      ing.modo === "base" ? ing.cantidad - 1 : ing.cantidad;
+
+                    return (
+                      <span
+                        key={ing.id}
+                        className="ingrediente-extra d-flex align-items-center gap-2 py-2 px-3 border rounded-pill bg-light shadow-sm"
+                        style={{ fontSize: "0.9rem" }}
                       >
-                        <button
-                          className="btn btn-sm border-0 color-secundario px-2"
-                          onClick={() => cambiarCantidad(ing.id, -1)}
-                          disabled={cant === 0}
-                        >
-                          −
-                        </button>
+                        <span className="fw-medium">{ing.nombre}</span>
 
-                        <span
-                          className={`fw-semibold px-2 ${
-                            cant > 0 ? "color-secundario" : "text-dark"
-                          }`}
-                          style={{ minWidth: "24px", textAlign: "center" }}
-                        >
-                          {cant}
+                        <span className="badge bg-light color-primario ms-1">
+                          ×{cantidad}
                         </span>
 
                         <button
-                          className="btn btn-sm border-0 color-secundario px-2"
-                          onClick={() => cambiarCantidad(ing.id, 1)}
-                          disabled={cant >= max}
+                          className="btn btn-sm btn-link p-0 m-0 text-danger"
+                          onClick={() => quitarExtra(ing.id)}
+                          style={{ textDecoration: "none" }}
                         >
-                          +
+                          <i className="bi bi-x-circle-fill" />
                         </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             )}
+
+            <hr />
+
+            {/* ── Selector por categorías (Tabs) ── */}
+            <h6 className="fw-semibold mb-3">Agregar ingredientes</h6>
+
+            <Tabs
+              defaultActiveKey={Object.keys(ingredientesAgrupados)[0]}
+              className="mb-3 scrollable-tabs"
+            >
+              {Object.entries(ingredientesAgrupados).map(
+                ([categoria, items]) => (
+                  <Tab eventKey={categoria} title={categoria} key={categoria}>
+                    <div className="list-group shadow-sm rounded-3">
+                      {items.map((ing) => {
+                        const actual = ingredientes.find(
+                          (i) => i.id === ing.id
+                        );
+                        const cantidad = actual?.cantidad ?? 0;
+
+                        // Para extras: cantidad extra directa
+                        // Para base: extras son cantidad - 1 (si no está quitado)
+                        const cantidadExtra =
+                          ing.modo === "base"
+                            ? Math.max(0, cantidad - 1)
+                            : cantidad;
+
+                        const quitado =
+                          ing.modo === "base" && cantidad === 0;
+
+                        const precio = getPrecioExtra(ing);
+                        const max = ing.max_cantidad ?? 3;
+
+                        return (
+                          <div
+                            key={ing.id}
+                            className={`list-group-item d-flex justify-content-between align-items-center ${
+                              ing.modo === "base" && quitado
+                                ? "bg-danger-subtle"
+                                : cantidad > 0
+                                  ? "bg-success-subtle"
+                                  : "bg-white"
+                            }`}
+                          >
+                            <div className="d-flex flex-column">
+                              <span className="fw-semibold text-dark">
+                                {ing.nombre}
+                              </span>
+                              {ing.modo === "base" ? (
+                                <small className="text-muted">
+                                  Ingrediente base
+                                  {ing.obligatorio && " · Obligatorio"}
+                                </small>
+                              ) : (
+                                <small className="text-muted">
+                                  +{precio.toFixed(2)} € / unidad
+                                </small>
+                              )}
+                            </div>
+
+                            <div className="btn-group btn-group-sm rounded-pill overflow-hidden">
+                              <button
+                                className="btn btn-light"
+                                onClick={() => disminuir(ing)}
+                                disabled={cantidad === 0}
+                              >
+                                −
+                              </button>
+
+                              <button
+                                className="btn btn-light fw-semibold"
+                                disabled
+                              >
+                                {cantidad}
+                              </button>
+
+                              <button
+                                className="btn btn-light"
+                                onClick={() => aumentar(ing)}
+                                disabled={cantidadExtra >= max}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Tab>
+                )
+              )}
+            </Tabs>
           </>
         )}
       </Modal.Body>
@@ -393,7 +459,7 @@ export default function ModalPersonalizar({
         }}
       >
         <div className="w-100">
-          {/* Total destacado en cápsula */}
+          {/* Total en cápsula */}
           <div className="bg-light rounded-4 px-3 py-2 mb-3 d-flex justify-content-between align-items-center">
             <span className="small color-primario fw-semibold">Total</span>
             <span className="fs-5 fw-bold color-secundario">
@@ -401,26 +467,16 @@ export default function ModalPersonalizar({
             </span>
           </div>
 
-          {/* Botón principal grande */}
+          {/* Botón principal */}
           <button
             className="theme-btn style4 w-100 rounded-pill fw-semibold text-white py-3 mb-2"
-            style={{
-              border: "none",
-            }}
-            onClick={() => {
-              onConfirm({
-                articuloId: data.id,
-                tamano: tamanoSeleccionado?.nombre ?? null,
-                precioTotal,
-                ingredientes,
-              });
-              onClose();
-            }}
+            style={{ border: "none" }}
+            onClick={handleConfirmar}
           >
             Añadir al carrito
           </button>
 
-          {/* Cancelar discreto */}
+          {/* Cancelar */}
           <div className="text-center">
             <button
               className="btn btn-link text-muted small p-0"

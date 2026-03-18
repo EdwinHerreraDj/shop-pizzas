@@ -2,225 +2,310 @@ import { Link } from "react-router-dom";
 import { useCarrito } from "../../context/CarritoContext";
 import usePrecios from "../../hooks/usePrecios";
 
-/* ===============================
-   Helpers
-================================ */
-const renderMitadDetalle = (label, mitad) => {
-  if (!mitad) return null;
-
+/* ── Helpers ─────────────────────────────────────── */
+const renderExtras = (extras = []) => {
+  if (!extras.length) return null;
   return (
-    <div className="small mt-1">
-      <strong>{label}:</strong>{" "}
-      <span className="text-muted">{mitad.nombre}</span>
-      {mitad.ingredientesExtras?.length > 0 && (
-        <ul className="ps-3 mb-1 text-success">
-          {mitad.ingredientesExtras.map((i) => (
-            <li key={i.id}>
-              + {i.nombre}
-              {i.cantidad > 1 && ` x${i.cantidad}`}
-            </li>
-          ))}
-        </ul>
-      )}
-      {mitad.ingredientesQuitados?.length > 0 && (
-        <p className="text-danger mb-0">
-          – sin {mitad.ingredientesQuitados.map((i) => i.nombre).join(", ")}
-        </p>
-      )}
+    <div className="mt-1">
+      {extras.map((i) => (
+        <span
+          key={i.id}
+          className="d-inline-flex align-items-center gap-1 rounded-pill px-2 py-1 me-1 mb-1 bg-success bg-opacity-10 border border-success-subtle"
+          style={{ fontSize: "0.78rem" }}
+        >
+          <i
+            className="bi bi-plus-circle-fill text-success"
+            style={{ fontSize: "0.7rem" }}
+          />
+          <span className="text-success fw-medium">{i.nombre}</span>
+          {i.cantidad > 1 && (
+            <span
+              className="badge bg-success text-white rounded-pill"
+              style={{ fontSize: "0.65rem" }}
+            >
+              x{i.cantidad}
+            </span>
+          )}
+        </span>
+      ))}
     </div>
   );
 };
 
-const Cart = () => {
-  const { carrito, eliminarItem, actualizarCantidad } = useCarrito();
-  const { formatEUR } = usePrecios();
-
-  const totalGeneral = carrito.reduce(
-    (acc, item) => acc + (item.precioTotal || 0) * (item.cantidad || 1),
-    0
+const renderQuitados = (quitados = []) => {
+  if (!quitados.length) return null;
+  return (
+    <div className="mt-1">
+      {quitados.map((i) => (
+        <span
+          key={i.id}
+          className="d-inline-flex align-items-center gap-1 rounded-pill px-2 py-1 me-1 mb-1 bg-danger bg-opacity-10 border border-danger-subtle"
+          style={{ fontSize: "0.78rem" }}
+        >
+          <i
+            className="bi bi-dash-circle-fill text-danger"
+            style={{ fontSize: "0.7rem" }}
+          />
+          <span className="text-danger fw-medium text-decoration-line-through">
+            {i.nombre}
+          </span>
+        </span>
+      ))}
+    </div>
   );
+};
+
+const renderMitad = (label, mitad, formatEUR) => {
+  if (!mitad) return null;
+  const totalMitad =
+    (Number(mitad.precioBase) || 0) + (Number(mitad.precioExtras) || 0);
+
+  return (
+    <div className="rounded-3 bg-light p-2 mt-2">
+      <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex align-items-center gap-2">
+          <span
+            className="d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+            style={{
+              width: 22,
+              height: 22,
+              fontSize: "0.7rem",
+              backgroundColor: "#eb0029",
+            }}
+          >
+            {label === "Mitad 1" ? "1" : "2"}
+          </span>
+          <span className="fw-semibold small">
+            {mitad.nombre || "Personalizada"}
+          </span>
+        </div>
+        <span className="small text-muted">{formatEUR(totalMitad)}</span>
+      </div>
+      {renderExtras(mitad.ingredientesExtras)}
+      {renderQuitados(mitad.ingredientesQuitados)}
+    </div>
+  );
+};
+
+/* ── Componente ──────────────────────────────────── */
+const Cart = () => {
+  const { carrito, eliminarItem, actualizarCantidad, totalCarrito } =
+    useCarrito();
+  const { formatEUR } = usePrecios();
 
   return (
     <div className="section-padding bg-white">
-      <div className="container">
+      <div className="container" style={{ maxWidth: 720 }}>
+        {/* ── Header ── */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h4 className="fw-bold color-primario mb-0">Tu pedido</h4>
+          {carrito.length > 0 && (
+            <span className="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2">
+              {carrito.reduce((a, i) => a + (i.cantidad || 0), 0)} artículo
+              {carrito.reduce((a, i) => a + (i.cantidad || 0), 0) !== 1 && "s"}
+            </span>
+          )}
+        </div>
+
         {carrito.length === 0 ? (
-          <div className="text-center py-5 text-muted">
-            Tu carrito está vacío 🍕
+          <div className="text-center py-5">
+            <div
+              className="d-inline-flex align-items-center justify-content-center rounded-circle bg-light mb-3"
+              style={{ width: 80, height: 80 }}
+            >
+              <i
+                className="bi bi-cart3"
+                style={{ fontSize: "2rem", color: "#adb5bd" }}
+              />
+            </div>
+            <p className="text-muted mb-4">Tu carrito está vacío</p>
+            <Link
+              to="/shop"
+              className="btn rounded-pill px-4 py-2 text-white fw-semibold"
+              style={{ backgroundColor: "#eb0029", borderColor: "#eb0029" }}
+            >
+              Ver la carta
+            </Link>
           </div>
         ) : (
           <>
-            {/* LISTADO */}
+            {/* ── ITEMS ── */}
             <div className="d-flex flex-column gap-3 mb-4">
               {carrito.map((item, index) => {
-                const totalLinea =
-                  (item.precioTotal || 0) * (item.cantidad || 1);
+                const precioUnitario =
+                  item.tipo === "pizza-mitades"
+                    ? item.precioTotal / item.cantidad
+                    : (Number(item.precioBase) || 0) +
+                      (Number(item.precioExtras) || 0);
 
                 return (
                   <div
                     key={item.uid}
-                    className="border rounded-4 p-3 shadow-sm"
+                    className="border rounded-4 p-3 shadow-sm bg-white"
                   >
+                    {/* ── Cabecera: nombre + precio ── */}
                     <div className="d-flex justify-content-between align-items-start mb-2">
-                      {/* INFO PRODUCTO */}
-                      <div>
-                        {/* ARTÍCULOS */}
-                        {(item.tipo === "articulo" ||
-                          item.tipo === "articulo-personalizado") && (
+                      <div className="flex-grow-1">
+                        {/* ARTÍCULO */}
+                        {item.tipo === "articulo" && (
                           <>
-                            <div className="fw-semibold">{item.nombre}</div>
-                            {item.tamaño && (
-                              <small className="text-muted">
-                                {item.tamaño}
-                              </small>
+                            <div className="fw-bold">{item.nombre}</div>
+                            {item.tamano && (
+                              <span className="badge bg-light text-muted border rounded-pill small">
+                                {item.tamano}
+                              </span>
                             )}
-
-                            {item.ingredientesExtras?.length > 0 && (
-                              <ul className="small text-success ps-3 mb-1">
-                                {item.ingredientesExtras.map((i) => (
-                                  <li key={i.id}>
-                                    + {i.nombre}
-                                    {i.cantidad > 1 && ` x${i.cantidad}`}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-
-                            {item.ingredientesQuitados?.length > 0 && (
-                              <div className="small text-danger">
-                                – sin{" "}
-                                {item.ingredientesQuitados
-                                  .map((i) => i.nombre)
-                                  .join(", ")}
-                              </div>
-                            )}
+                            {renderExtras(item.ingredientesExtras)}
+                            {renderQuitados(item.ingredientesQuitados)}
                           </>
                         )}
 
                         {/* PIZZA ENTERA */}
                         {item.tipo === "pizza-entera" && (
                           <>
-                            <div className="fw-semibold">Pizza entera</div>
-                            <small className="text-muted">{item.tamaño}</small>
-
-                            {item.ingredientesExtras?.length > 0 && (
-                              <ul className="small text-success ps-3 mb-1">
-                                {item.ingredientesExtras.map((i) => (
-                                  <li key={i.id}>
-                                    + {i.nombre}
-                                    {i.cantidad > 1 && ` x${i.cantidad}`}
-                                  </li>
-                                ))}
-                              </ul>
+                            <div className="fw-bold">Pizza personalizada</div>
+                            {item.tamano && (
+                              <span className="badge bg-light text-muted border rounded-pill small">
+                                {item.tamano}
+                              </span>
                             )}
+                            {renderExtras(item.ingredientesExtras)}
+                            {renderQuitados(item.ingredientesQuitados)}
                           </>
                         )}
 
                         {/* PIZZA MITADES */}
                         {item.tipo === "pizza-mitades" && (
                           <>
-                            <div className="fw-semibold">Pizza por mitades</div>
-                            <small className="text-muted">{item.tamaño}</small>
-
-                            {renderMitadDetalle(
-                              "Mitad 1",
-                              item.mitades?.mitadA
+                            <div className="fw-bold">Pizza por mitades</div>
+                            {item.tamano && (
+                              <span className="badge bg-light text-muted border rounded-pill small">
+                                {item.tamano}
+                              </span>
                             )}
-                            {renderMitadDetalle(
+                            {renderMitad(
+                              "Mitad 1",
+                              item.mitades?.mitadA,
+                              formatEUR,
+                            )}
+                            {renderMitad(
                               "Mitad 2",
-                              item.mitades?.mitadB
+                              item.mitades?.mitadB,
+                              formatEUR,
                             )}
                           </>
                         )}
                       </div>
 
-                      {/* ELIMINAR */}
+                      {/* Eliminar */}
                       <button
                         type="button"
-                        className="btn btn-sm text-danger"
+                        className="btn btn-sm text-danger p-1"
                         onClick={() => eliminarItem(index)}
+                        title="Eliminar"
                       >
-                        <i className="bi bi-trash"></i>
+                        <i className="bi bi-trash" />
                       </button>
                     </div>
 
-                    {/* CONTROLES */}
-                    <div className="d-flex justify-content-between align-items-center">
-                      {/* CANTIDAD */}
-                      {item.tipo === "pizza-mitades" ? (
-                        <span className="text-muted">Cantidad: 1</span>
-                      ) : (
-                        <div className="btn-group btn-group-sm">
-                          <button
-                            className="btn btn-outline-secondary"
-                            onClick={() =>
-                              actualizarCantidad(
-                                index,
-                                Math.max(1, item.cantidad - 1)
-                              )
-                            }
-                          >
-                            −
-                          </button>
+                    {/* ── Footer: cantidad + precio ── */}
+                    <div className="d-flex justify-content-between align-items-center pt-2 border-top">
+                      {/* Stepper cantidad */}
+                      <div
+                        className="d-inline-flex align-items-center rounded-pill overflow-hidden border"
+                        style={{ height: 34 }}
+                      >
+                        <button
+                          className="btn btn-sm border-0 px-3 h-100"
+                          onClick={() =>
+                            item.cantidad === 1
+                              ? eliminarItem(index)
+                              : actualizarCantidad(index, item.cantidad - 1)
+                          }
+                        >
+                          {item.cantidad === 1 ? (
+                            <i
+                              className="bi bi-trash text-danger"
+                              style={{ fontSize: "0.8rem" }}
+                            />
+                          ) : (
+                            "−"
+                          )}
+                        </button>
 
-                          <span className="px-3 d-flex align-items-center">
-                            {item.cantidad}
-                          </span>
+                        <span
+                          className="fw-bold px-2"
+                          style={{ minWidth: 28, textAlign: "center" }}
+                        >
+                          {item.cantidad}
+                        </span>
 
-                          <button
-                            className="btn btn-outline-secondary"
-                            onClick={() =>
-                              actualizarCantidad(index, item.cantidad + 1)
-                            }
-                          >
-                            +
-                          </button>
+                        <button
+                          className="btn btn-sm border-0 px-3 h-100"
+                          onClick={() =>
+                            actualizarCantidad(index, item.cantidad + 1)
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Precio */}
+                      <div className="text-end">
+                        {item.cantidad > 1 && (
+                          <div className="text-muted small">
+                            {formatEUR(precioUnitario)} × {item.cantidad}
+                          </div>
+                        )}
+                        <div className="fw-bold color-secundario">
+                          {formatEUR(item.precioTotal)}
                         </div>
-                      )}
-
-                      {/* TOTAL */}
-                      <div className="fw-bold">{formatEUR(totalLinea)}</div>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* RESUMEN FINAL */}
-            <div className="border-top pt-4 mt-4">
-              <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                {/* TOTAL */}
-                <div>
-                  <span className="text-muted small text-uppercase">
-                    Total del pedido
-                  </span>
-                  <h3 className="fw-bold mb-0">{formatEUR(totalGeneral)}</h3>
-                </div>
+            {/* ── RESUMEN ── */}
+            <div className="border rounded-4 p-4 shadow-sm bg-light">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <span className="text-muted">Subtotal</span>
+                <span className="fw-semibold">{formatEUR(totalCarrito)}</span>
+              </div>
 
-                {/* ACCIONES */}
-                <div className="d-flex gap-2">
-                  <Link
-                    to="/shop"
-                    className="btn rounded-pill px-4"
-                    style={{
-                      backgroundColor: "#f8f9fa",
-                      color: "#495057",
-                      border: "1px solid #dee2e6",
-                    }}
-                  >
-                    Seguir comprando
-                  </Link>
+              <hr className="my-2" />
 
-                  <Link
-                    to="/checkout"
-                    className="btn rounded-pill px-4 text-white fw-semibold"
-                    style={{
-                      backgroundColor: "#eb0029",
-                      borderColor: "#eb0029",
-                    }}
-                  >
-                    Finalizar pedido
-                  </Link>
-                </div>
+              <div className="d-flex justify-content-between align-items-center">
+                <span className="fw-bold fs-5">Total</span>
+                <span className="fw-bold fs-5 color-secundario">
+                  {formatEUR(totalCarrito)}
+                </span>
+              </div>
+
+              <div className="d-flex flex-column flex-sm-row gap-2 mt-4">
+                <Link
+                  to="/shop"
+                  className="btn rounded-pill px-4 py-2 flex-fill text-center"
+                  style={{
+                    backgroundColor: "#f8f9fa",
+                    color: "#495057",
+                    border: "1px solid #dee2e6",
+                  }}
+                >
+                  Seguir comprando
+                </Link>
+
+                <Link
+                  to="/shop/checkout"
+                  className="theme-btn style4 w-100 rounded-pill fw-semibold text-white py-3 mb-2 text-center"
+                  style={{
+                    backgroundColor: "#eb0029",
+                    borderColor: "#eb0029",
+                  }}
+                >
+                  Finalizar pedido
+                </Link>
               </div>
             </div>
           </>

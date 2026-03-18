@@ -2,45 +2,78 @@ import { useCarrito } from "../../context/CarritoContext";
 import usePrecios from "../../hooks/usePrecios";
 
 export default function CarritoSidebar() {
-  const { carrito, eliminarItem, vaciarCarrito } = useCarrito();
+  const {
+    carrito,
+    eliminarItem,
+    vaciarCarrito,
+    actualizarCantidad,
+    totalCarrito,
+  } = useCarrito();
   const { formatEUR } = usePrecios();
 
-  const total = carrito.reduce(
-    (acc, item) => acc + (Number(item.precioTotal) || 0),
-    0
-  );
+  /* ── Helpers de render ─────────────────────────── */
+  const renderExtras = (extras = []) => {
+    if (!extras.length) return null;
+    return (
+      <ul className="mb-1 ps-3 text-muted small">
+        {extras.map((i) => (
+          <li key={i.id}>
+            + {i.nombre}
+            {i.cantidad > 1 && <span> x{i.cantidad}</span>}
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
-  // mostrar solo cambios reales
-  const getExtrasVisibles = (extras = []) =>
-    extras.filter((i) => !i.incluido || i.cantidad > 1);
+  const renderQuitados = (quitados = []) => {
+    if (!quitados.length) return null;
+    return (
+      <p className="text-muted small mb-0">
+        – sin {quitados.map((i) => i.nombre).join(", ")}
+      </p>
+    );
+  };
 
-  // render de una mitad (CLAVE)
   const renderMitad = (titulo, mitad) => {
     if (!mitad) return null;
-
-    const extrasVisibles = getExtrasVisibles(mitad.ingredientesExtras || []);
-
     return (
       <div className="mt-1 ms-2">
         <strong>{titulo}:</strong> {mitad.nombre || "Personalizada"}
-        {extrasVisibles.length > 0 && (
-          <ul className="mb-1 ps-3 text-muted small">
-            {extrasVisibles.map((i) => (
-              <li key={i.id}>
-                + {i.nombre} x{i.cantidad}
-              </li>
-            ))}
-          </ul>
-        )}
-        {mitad.ingredientesQuitados?.length > 0 && (
-          <p className="text-muted small mb-0">
-            – sin {mitad.ingredientesQuitados.map((i) => i.nombre).join(", ")}
-          </p>
-        )}
+        {renderExtras(mitad.ingredientesExtras)}
+        {renderQuitados(mitad.ingredientesQuitados)}
       </div>
     );
   };
 
+  /* ── Controles de cantidad ─────────────────────── */
+  const renderCantidadControls = (item, index) => (
+    <div className="d-flex align-items-center gap-2 mt-2">
+      <button
+        className="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
+        style={{ width: 24, height: 24, fontSize: "0.75rem" }}
+        onClick={() =>
+          item.cantidad === 1
+            ? eliminarItem(index)
+            : actualizarCantidad(index, item.cantidad - 1)
+        }
+      >
+        {item.cantidad === 1 ? <i className="bi bi-trash" /> : "−"}
+      </button>
+
+      <span className="fw-semibold small">{item.cantidad}</span>
+
+      <button
+        className="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
+        style={{ width: 24, height: 24, fontSize: "0.75rem" }}
+        onClick={() => actualizarCantidad(index, item.cantidad + 1)}
+      >
+        +
+      </button>
+    </div>
+  );
+
+  /* ── Render ────────────────────────────────────── */
   return (
     <div className="single-sidebar-widget">
       <h5 className="widget-title d-flex justify-content-between align-items-center">
@@ -57,135 +90,74 @@ export default function CarritoSidebar() {
 
       {carrito.length === 0 ? (
         <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted">
-          <i className="bi bi-info-circle me-1"></i> Tu carrito está vacío.
+          <i className="bi bi-info-circle me-1" /> Tu carrito está vacío.
         </div>
       ) : (
         <ul className="list-group list-group-flush small">
-          {carrito.map((item, index) => {
-            const extrasVisibles = getExtrasVisibles(item.ingredientesExtras);
+          {carrito.map((item, index) => (
+            <li
+              key={item.uid}
+              className="list-group-item d-flex justify-content-between align-items-start py-2 px-0 border-0 border-bottom"
+            >
+              <div className="flex-grow-1">
+                {/* ── ARTÍCULO (normal o personalizado) ── */}
+                {item.tipo === "articulo" && (
+                  <>
+                    <strong>{item.nombre}</strong>
+                    {item.tamano && (
+                      <span className="text-muted"> ({item.tamano})</span>
+                    )}
+                    {renderExtras(item.ingredientesExtras)}
+                    {renderQuitados(item.ingredientesQuitados)}
+                  </>
+                )}
 
-            return (
-              <li
-                key={item.uid}
-                className="list-group-item d-flex justify-content-between align-items-start py-2 px-0 border-0 border-bottom"
-              >
-                <div>
-                  {/* ===============================
-                      ARTÍCULO NORMAL
-                  =============================== */}
-                  {item.tipo === "articulo" && (
-                    <>
-                      <strong>
-                        {item.nombre}
-                        {item.cantidad > 1 && (
-                          <span className="text-muted"> ×{item.cantidad}</span>
-                        )}
-                      </strong>
-                      {item.tamaño && (
-                        <span className="text-muted"> ({item.tamaño})</span>
-                      )}
-                    </>
-                  )}
+                {/* ── PIZZA ENTERA ── */}
+                {item.tipo === "pizza-entera" && (
+                  <>
+                    <strong>Pizza personalizada</strong>{" "}
+                    {item.tamano && (
+                      <span className="text-muted">({item.tamano})</span>
+                    )}
+                    {renderExtras(item.ingredientesExtras)}
+                    {renderQuitados(item.ingredientesQuitados)}
+                  </>
+                )}
 
-                  {/* ===============================
-                      ARTÍCULO PERSONALIZADO
-                  =============================== */}
-                  {item.tipo === "articulo-personalizado" && (
-                    <>
-                      <strong>{item.nombre}</strong>
-                      {item.tamaño && (
-                        <span className="text-muted"> ({item.tamaño})</span>
-                      )}
+                {/* ── PIZZA POR MITADES ── */}
+                {item.tipo === "pizza-mitades" && (
+                  <>
+                    <strong>Pizza por mitades</strong>{" "}
+                    {item.tamano && (
+                      <span className="text-muted">({item.tamano})</span>
+                    )}
+                    {renderMitad("Mitad 1", item.mitades?.mitadA)}
+                    {renderMitad("Mitad 2", item.mitades?.mitadB)}
+                  </>
+                )}
 
-                      {extrasVisibles.length > 0 && (
-                        <ul className="mb-1 ps-3 text-muted small">
-                          {extrasVisibles.map((i) => (
-                            <li key={i.id}>
-                              + {i.nombre} x{i.cantidad}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                {/* ── Controles +/− ── */}
+                {renderCantidadControls(item, index)}
+              </div>
 
-                      {item.ingredientesQuitados?.length > 0 && (
-                        <p className="text-muted small mb-0">
-                          – sin{" "}
-                          {item.ingredientesQuitados
-                            .map((i) => i.nombre)
-                            .join(", ")}
-                        </p>
-                      )}
-                    </>
-                  )}
-
-                  {/* ===============================
-                      PIZZA ENTERA
-                  =============================== */}
-                  {item.tipo === "pizza-entera" && (
-                    <>
-                      <strong>
-                        Pizza entera
-                        {item.cantidad > 1 && (
-                          <span className="text-muted"> ×{item.cantidad}</span>
-                        )}
-                      </strong>{" "}
-                      <span className="text-muted">({item.tamaño})</span>
-                      {extrasVisibles.length > 0 && (
-                        <ul className="mb-1 ps-3 text-muted small">
-                          {extrasVisibles.map((i) => (
-                            <li key={i.id}>
-                              + {i.nombre} x{i.cantidad}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {item.ingredientesQuitados?.length > 0 && (
-                        <p className="text-muted small mb-0">
-                          – sin{" "}
-                          {item.ingredientesQuitados
-                            .map((i) => i.nombre)
-                            .join(", ")}
-                        </p>
-                      )}
-                    </>
-                  )}
-
-                  {/* ===============================
-                      PIZZA POR MITADES
-                  =============================== */}
-                  {item.tipo === "pizza-mitades" && (
-                    <>
-                      <strong>
-                        Pizza por mitades
-                        {item.cantidad > 1 && (
-                          <span className="text-muted"> ×{item.cantidad}</span>
-                        )}
-                      </strong>{" "}
-                      <span className="text-muted">({item.tamaño})</span>
-                      {renderMitad("Mitad 1", item.mitades?.mitadA)}
-                      {renderMitad("Mitad 2", item.mitades?.mitadB)}
-                    </>
-                  )}
+              <div className="text-end ms-3">
+                <div className="fw-semibold">
+                  {formatEUR(item.precioTotal)}
                 </div>
+                <button
+                  onClick={() => eliminarItem(index)}
+                  className="btn btn-link text-danger btn-sm p-0 mt-1"
+                >
+                  <i className="bi bi-x-circle" />
+                </button>
+              </div>
+            </li>
+          ))}
 
-                <div className="text-end">
-                  <div className="fw-semibold">
-                    {formatEUR(item.precioTotal)}
-                  </div>
-                  <button
-                    onClick={() => eliminarItem(index)}
-                    className="btn btn-link text-danger btn-sm p-0 mt-1"
-                  >
-                    <i className="bi bi-x-circle"></i>
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-
+          {/* ── TOTAL ── */}
           <li className="list-group-item border-0 mt-2 d-flex justify-content-between fw-bold">
             <span>Total</span>
-            <span>{formatEUR(total)}</span>
+            <span>{formatEUR(totalCarrito)}</span>
           </li>
 
           <li>

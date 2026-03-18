@@ -37,13 +37,13 @@ const HeroBanner1 = () => {
     const heroContent = [
         {
             img: '/assets/img/banner/bannerThumb1_1.png',
-            subtitle: 'CASA DE CAMPO',
+            subtitle: 'pizzería casa de campo',
             title: 'Pizzas artesanas únicas',
             btnname: 'Pide ahora'
         },
         {
             img: '/assets/img/banner/bannerThumb1_3.png',
-            subtitle: 'CASA DE CAMPO',
+            subtitle: 'pizzería casa de campo',
             title: 'Tu pizza caliente en minutos',
             btnname: 'Ordenar'
         },

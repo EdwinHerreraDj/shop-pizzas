@@ -1,18 +1,64 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import SelectorMitad from "./SelectorMitad";
 
-export default function PizzaMitadBuilder({ tamaño, onChange }) {
+/**
+ * Builder para pizza por mitades.
+ *
+ * Props:
+ *   tamanoId     — id numérico del tamaño
+ *   tamanoNombre — nombre del tamaño (para display)
+ *   onChange     — callback({ mitadA, mitadB }) | ({ mitadA: null, mitadB: null })
+ */
+export default function PizzaMitadBuilder({ tamanoId, tamanoNombre, onChange }) {
   const [mitadA, setMitadA] = useState(null);
   const [mitadB, setMitadB] = useState(null);
 
+  /* Reset cuando cambia el tamaño */
   useEffect(() => {
-    if (!mitadA || !mitadB) return;
+    setMitadA(null);
+    setMitadB(null);
+  }, [tamanoId]);
 
-    onChange({
-      mitadA,
-      mitadB,
-    });
+  /* Emitir cambios al modal */
+  useEffect(() => {
+    if (!mitadA || !mitadB) {
+      onChange({ mitadA: null, mitadB: null });
+      return;
+    }
+    onChange({ mitadA, mitadB });
   }, [mitadA, mitadB, onChange]);
+
+  const handleMitadAChange = useCallback((data) => {
+    if (data === null) {
+      setMitadA(null);
+      return;
+    }
+    setMitadA({
+      articuloId: data.articuloId,
+      tipoProductoId: data.tipoProductoId,
+      nombre: data.nombre,
+      precioBase: data.precioBase ?? 0,
+      precioExtras: data.precioExtras ?? 0,
+      ingredientesExtras: data.ingredientesExtras ?? [],
+      ingredientesQuitados: data.ingredientesQuitados ?? [],
+    });
+  }, []);
+
+  const handleMitadBChange = useCallback((data) => {
+    if (data === null) {
+      setMitadB(null);
+      return;
+    }
+    setMitadB({
+      articuloId: data.articuloId,
+      tipoProductoId: data.tipoProductoId,
+      nombre: data.nombre,
+      precioBase: data.precioBase ?? 0,
+      precioExtras: data.precioExtras ?? 0,
+      ingredientesExtras: data.ingredientesExtras ?? [],
+      ingredientesQuitados: data.ingredientesQuitados ?? [],
+    });
+  }, []);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -29,21 +75,13 @@ export default function PizzaMitadBuilder({ tamaño, onChange }) {
           >
             1
           </span>
-
           <h5 className="fw-bold mb-0">Primera mitad</h5>
         </div>
 
         <SelectorMitad
-          tamaño={tamaño}
-          onChange={(data) => {
-            setMitadA({
-              nombre: data.nombre,
-              precioBase: data.precioBase,
-              precioExtras: data.precioExtras,
-              ingredientesExtras: data.ingredientesExtras || [],
-              ingredientesQuitados: data.ingredientesQuitados || [],
-            });
-          }}
+          tamanoId={tamanoId}
+          tamanoNombre={tamanoNombre}
+          onChange={handleMitadAChange}
         />
       </div>
 
@@ -60,21 +98,13 @@ export default function PizzaMitadBuilder({ tamaño, onChange }) {
           >
             2
           </span>
-
           <h5 className="fw-bold mb-0">Segunda mitad</h5>
         </div>
 
         <SelectorMitad
-          tamaño={tamaño}
-          onChange={(data) => {
-            setMitadB({
-              nombre: data.nombre,
-              precioBase: data.precioBase,
-              precioExtras: data.precioExtras,
-              ingredientesExtras: data.ingredientesExtras || [],
-              ingredientesQuitados: data.ingredientesQuitados || [],
-            });
-          }}
+          tamanoId={tamanoId}
+          tamanoNombre={tamanoNombre}
+          onChange={handleMitadBChange}
         />
       </div>
     </div>

@@ -28,52 +28,64 @@ export default function useShop() {
     setPage(1);
   };
   // Utilidad para obtener el precio base según tamaño
-  const obtenerPrecioArticulo = (producto, tamaño) => {
-    // Caso precio único (bebidas, postres, etc.)
-    if (Number(producto.precios?.unico) > 0) {
+  const obtenerPrecioArticulo = (producto, tamanoPorDefecto = "Pequeña") => {
+    const tamanos = Array.isArray(producto.tamanos) ? producto.tamanos : [];
+
+    if (tamanos.length === 0) {
       return {
-        precioBase: Number(producto.precios.unico),
-        tamaño: null,
+        precioBase: 0,
+        tamano: null,
+        tamanoId: null,
+      };
+    }
+
+    // Caso producto único
+    const unico = tamanos.find(
+      (t) =>
+        t.nombre?.toLowerCase() === "unico" ||
+        t.nombre?.toLowerCase() === "único",
+    );
+
+    if (unico) {
+      return {
+        precioBase: Number(unico.precio) || 0,
+        tamano: unico.nombre,
+        tamanoId: unico.id,
       };
     }
 
     // Caso con tamaños
-    const map = {
-      Pequeña: "pequena",
-      Mediana: "mediana",
-      Grande: "grande",
-    };
-
-    const key = map[tamaño] ?? "pequena";
+    const tamanoEncontrado =
+      tamanos.find((t) => t.nombre === tamanoPorDefecto) ?? tamanos[0];
 
     return {
-      precioBase: Number(producto.precios?.[key]) || 0,
-      tamaño,
+      precioBase: Number(tamanoEncontrado?.precio) || 0,
+      tamano: tamanoEncontrado?.nombre ?? null,
+      tamanoId: tamanoEncontrado?.id ?? null,
     };
   };
 
   // Agregar al carrito directamente
   const handleAgregar = (producto) => {
-    const tamañoPorDefecto = "Pequeña";
+    const tamanoPorDefecto = "Pequeña";
 
-    const { precioBase, tamaño } = obtenerPrecioArticulo(
+    const { precioBase, tamano, tamanoId } = obtenerPrecioArticulo(
       producto,
-      tamañoPorDefecto
+      tamanoPorDefecto,
     );
 
     const item = {
       tipo: "articulo",
       articuloId: producto.id,
       nombre: producto.nombre,
-      tamaño, // null si es precio único
+      tamano,
+      tamanoId,
       cantidad: 1,
 
-      // precios
       precioBase,
       precioExtras: 0,
       precioTotal: precioBase,
 
-      // ingredientes (solo informativo aquí)
       ingredientesBase: producto.ingredientes || [],
       ingredientesExtras: [],
       ingredientesQuitados: [],

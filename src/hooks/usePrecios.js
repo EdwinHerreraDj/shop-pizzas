@@ -1,60 +1,61 @@
 import { useCallback } from "react";
 
 /**
- * Hook reutilizable para manejar precios, conversiones
- * y formateo a moneda EUR en toda la app.
+ * Hook unificado de utilidades de precios.
+ * Alineado con arquitectura:
+ * - tamanos globales (id)
+ * - precio_por_tamano indexado por tamano_id
  */
 export default function usePrecios() {
 
-    // 🔹 Convierte cualquier valor a número seguro
-    const toNum = useCallback((v) => Number.parseFloat(v ?? 0) || 0, []);
+  // Conversión segura a número
+  const toNum = useCallback((v) => Number.parseFloat(v ?? 0) || 0, []);
 
-    // 🔹 Formatea número como moneda en euros (EUR)
-    const formatEUR = useCallback((v) => {
-        const value = Number.isFinite(v) ? v : parseFloat(v ?? 0);
-        return new Intl.NumberFormat("es-ES", {
-            style: "currency",
-            currency: "EUR",
-        }).format(value || 0);
-    }, []);
+  // Formateo EUR
+  const formatEUR = useCallback((v) => {
+    const value = Number.isFinite(v) ? v : parseFloat(v ?? 0);
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR",
+    }).format(value || 0);
+  }, []);
 
-    /**
-     * 🔹 Obtiene el precio del ingrediente según tamaño o tipo de producto
-     * @param {Object} ingrediente - objeto del ingrediente con precios
-     * @param {String} tamaño - "Pequeña" | "Mediana" | "Grande"
-     * @param {Boolean} esPrecioUnico - si el producto usa un único precio
-     */
-    const getPrecioPorTamaño = useCallback((ingrediente, tamaño, esPrecioUnico = false) => {
-        if (!ingrediente || !ingrediente.precios) return 0;
+  /**
+   * Obtiene precio del ingrediente según tamano_id
+   * @param {Object} ingrediente
+   * @param {Number} tamanoId
+   */
+  const getPrecioIngrediente = useCallback((ingrediente, tamanoId) => {
+    if (!ingrediente || !tamanoId) return 0;
+    return toNum(
+      ingrediente.precio_por_tamano?.[tamanoId] ?? 0
+    );
+  }, [toNum]);
 
-        let precios = ingrediente.precios;
+  /**
+   * Calcula total de extras seleccionados
+   */
+  const calcularExtras = useCallback((ingredientes, tamanoId) => {
+    if (!tamanoId) return 0;
 
-        // normaliza el formato de precios (a veces viene como array o anidado)
-        if (Array.isArray(precios)) precios = precios[0];
-        if (typeof precios === "object" && !("pequena" in precios) && Object.keys(precios).length > 0) {
-            precios = Object.values(precios)[0];
-        }
-        if (!precios) return 0;
+    return ingredientes.reduce((acc, ing) => {
+      const precio = toNum(
+        ing.precio_por_tamano?.[tamanoId] ?? 0
+      );
 
-        // si el producto tiene un precio único
-        if (esPrecioUnico) return toNum(precios.unico);
+      const unidadesDePago =
+        ing.modo === "base"
+          ? Math.max(ing.cantidad - 1, 0)
+          : ing.cantidad;
 
-        // selecciona el precio según el tamaño
-        switch (tamaño) {
-            case "Pequeña":
-                return toNum(precios.pequena ?? precios.unico);
-            case "Mediana":
-                return toNum(precios.mediana ?? precios.unico);
-            case "Grande":
-                return toNum(precios.grande ?? precios.unico);
-            default:
-                return toNum(precios.unico);
-        }
-    }, [toNum]);
+      return acc + precio * unidadesDePago;
+    }, 0);
+  }, [toNum]);
 
-    return {
-        toNum,
-        formatEUR,
-        getPrecioPorTamaño,
-    };
+  return {
+    toNum,
+    formatEUR,
+    getPrecioIngrediente,
+    calcularExtras,
+  };
 }
