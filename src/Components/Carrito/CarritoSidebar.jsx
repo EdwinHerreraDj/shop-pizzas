@@ -1,4 +1,5 @@
 import { useCarrito } from "../../context/CarritoContext";
+import { Link } from "react-router-dom";
 import usePrecios from "../../hooks/usePrecios";
 
 export default function CarritoSidebar() {

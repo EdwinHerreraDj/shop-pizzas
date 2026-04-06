@@ -334,6 +334,15 @@ export default function TrackingPedido() {
     if (codigoParam) buscar(codigoParam);
   }, [codigoParam, buscar]);
 
+  // Limpiar pedido activo de localStorage si terminó
+  useEffect(() => {
+    if (!pedido) return;
+    const terminales = ["entregado", "cancelado"];
+    if (terminales.includes(pedido.estado)) {
+      localStorage.removeItem("pedido_activo");
+    }
+  }, [pedido]);
+
   // Polling cada 20s si hay pedido activo
   useEffect(() => {
     const estadosTerminales = ["entregado", "cancelado"];
@@ -483,6 +492,27 @@ export default function TrackingPedido() {
                         </div>
                         <div className="small text-muted">
                           {pedido.direccion}, {pedido.codigo_postal}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hora deseada */}
+                  {pedido.hora_deseada && (
+                    <div
+                      className="d-flex align-items-start gap-2 mb-3 p-3 rounded-3"
+                      style={{ background: "#ede9fe" }}
+                    >
+                      <i
+                        className="bi bi-clock-fill mt-1"
+                        style={{ color: "#7c3aed" }}
+                      />
+                      <div>
+                        <div className="small fw-semibold">
+                          Hora deseada
+                        </div>
+                        <div className="small text-muted">
+                          {pedido.hora_deseada}
                         </div>
                       </div>
                     </div>

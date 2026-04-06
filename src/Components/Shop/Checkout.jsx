@@ -317,7 +317,7 @@ const Checkout = () => {
     codigo_postal: "",
     barrio: "",
     observaciones: "",
-    metodo_pago: "efectivo",
+    metodo_pago: "",
     tipo_entrega: "domicilio",
   });
 
@@ -327,16 +327,31 @@ const Checkout = () => {
   const [zonas, setZonas] = useState([]);
   const [loadingZonas, setLoadingZonas] = useState(true);
   const [errorZonas, setErrorZonas] = useState(false);
+  const [slots, setSlots] = useState([]);
+  const [modoHora, setModoHora] = useState("asap"); // "asap" | "programar"
+  const [horaDeseada, setHoraDeseada] = useState("");
+  const [metodosPago, setMetodosPago] = useState([]);
 
   useEffect(() => {
     setLoadingZonas(true);
     setErrorZonas(false);
-    clientesAxios
-      .get("/shop/zonas-envio")
-      .then(({ data }) => setZonas(data))
+    Promise.all([
+      clientesAxios.get("/shop/zonas-envio"),
+      clientesAxios.get("/shop/franjas-horarias"),
+      clientesAxios.get("/shop/metodos-pago"),
+    ])
+      .then(([zonasRes, franjasRes, metodosRes]) => {
+        setZonas(zonasRes.data);
+        setSlots(franjasRes.data.slots ?? []);
+        setMetodosPago(metodosRes.data);
+        const primerMetodo = metodosRes.data.find((m) => m.activo_domicilio);
+        if (primerMetodo) {
+          setForm((prev) => ({ ...prev, metodo_pago: prev.metodo_pago || primerMetodo.clave }));
+        }
+      })
       .catch(() => {
         setErrorZonas(true);
-        toast.error("No se pudieron cargar las zonas de envío");
+        toast.error("No se pudieron cargar los datos de configuración");
       })
       .finally(() => setLoadingZonas(false));
   }, []);
@@ -359,14 +374,6 @@ const Checkout = () => {
     return barriosDisponibles.find((z) => z.barrio === form.barrio) ?? null;
   }, [form.barrio, barriosDisponibles, esRecogida]);
 
-  const submitBloqueado =
-    loading ||
-    loadingZonas ||
-    errorZonas ||
-    carrito.length === 0 ||
-    cpSinCobertura ||
-    (!esRecogida && !zonaSeleccionada);
-
   const subtotal = totalCarrito;
   const gastosEnvio = zonaSeleccionada
     ? Number(zonaSeleccionada.recargo)
@@ -377,6 +384,21 @@ const Checkout = () => {
       : esRecogida
         ? subtotal
         : null;
+
+  const pedidoMinimoNoAlcanzado =
+    !esRecogida &&
+    zonaSeleccionada &&
+    Number(zonaSeleccionada.pedido_minimo) > 0 &&
+    subtotal < Number(zonaSeleccionada.pedido_minimo);
+
+  const submitBloqueado =
+    loading ||
+    loadingZonas ||
+    errorZonas ||
+    carrito.length === 0 ||
+    cpSinCobertura ||
+    (!esRecogida && !zonaSeleccionada) ||
+    pedidoMinimoNoAlcanzado;
 
   // ── Carrito vacío ──────────────────────────────────────────────────────
   if (carrito.length === 0 && !pedidoCreado) {
@@ -413,10 +435,21 @@ const Checkout = () => {
     setForm((prev) => {
       const next = { ...prev, [name]: value };
       if (name === "codigo_postal") next.barrio = "";
-      if (name === "tipo_entrega" && value === "recogida") {
-        next.direccion = "";
-        next.codigo_postal = "";
-        next.barrio = "";
+      if (name === "tipo_entrega") {
+        if (value === "recogida") {
+          next.direccion = "";
+          next.codigo_postal = "";
+          next.barrio = "";
+        }
+        // Resetear método de pago si el actual no está disponible en el nuevo tipo
+        const campo = value === "recogida" ? "activo_recogida" : "activo_domicilio";
+        const disponible = metodosPago.some(
+          (m) => m.clave === next.metodo_pago && m[campo],
+        );
+        if (!disponible) {
+          const primero = metodosPago.find((m) => m[campo]);
+          next.metodo_pago = primero?.clave ?? "";
+        }
       }
       return next;
     });
@@ -477,27 +510,36 @@ const Checkout = () => {
         },
         metodo_pago: form.metodo_pago,
         observaciones: form.observaciones || null,
+        hora_deseada: modoHora === "programar" && horaDeseada ? horaDeseada : null,
         items: prepararPedido(),
       };
 
       const { data } = await clientesAxios.post("/shop/pedidos", payload);
       setPedidoCreado(data.pedido);
       vaciarCarrito();
+      localStorage.setItem("pedido_activo", data.pedido.codigo);
       toast.success("¡Pedido realizado correctamente!");
     } catch (error) {
       if (error.response?.status === 422) {
         const serverErrors = error.response.data.errors ?? {};
         setErrores(serverErrors);
-        const primerCampo = Object.keys(serverErrors)[0];
-        if (primerCampo) {
-          const normalizado = primerCampo.startsWith("cliente.")
-            ? primerCampo.replace("cliente.", "")
-            : primerCampo;
-          document
-            .getElementById(`field-${normalizado}`)
-            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        if (serverErrors.pedido_minimo) {
+          toast.error(serverErrors.pedido_minimo[0]);
+        } else if (serverErrors.hora_deseada) {
+          toast.error(serverErrors.hora_deseada[0]);
+        } else {
+          const primerCampo = Object.keys(serverErrors)[0];
+          if (primerCampo) {
+            const normalizado = primerCampo.startsWith("cliente.")
+              ? primerCampo.replace("cliente.", "")
+              : primerCampo;
+            document
+              .getElementById(`field-${normalizado}`)
+              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          toast.error("Revisa los datos del formulario");
         }
-        toast.error("Revisa los datos del formulario");
       } else {
         toast.error(
           error.response?.data?.message ?? "No se pudo realizar el pedido",
@@ -634,7 +676,11 @@ const Checkout = () => {
                               <option value="">— Selecciona tu barrio —</option>
                               {barriosDisponibles.map((z) => (
                                 <option key={z.barrio} value={z.barrio}>
-                                  {z.barrio} ({formatEUR(z.recargo)} envío)
+                                  {z.barrio} ({formatEUR(z.recargo)} envío
+                                  {Number(z.pedido_minimo) > 0
+                                    ? ` · mín. ${formatEUR(z.pedido_minimo)}`
+                                    : ""}
+                                  )
                                 </option>
                               ))}
                             </select>
@@ -671,39 +717,106 @@ const Checkout = () => {
                 >
                   Método de pago
                 </h5>
-                <RadioCard
-                  id="pago_efectivo"
-                  name="metodo_pago"
-                  value="efectivo"
-                  checked={form.metodo_pago === "efectivo"}
-                  onChange={handleChange}
-                  icon="💵"
-                  label="Efectivo"
-                  sublabel="Paga al recibir o recoger"
-                />
-                <RadioCard
-                  id="pago_tarjeta"
-                  name="metodo_pago"
-                  value="tarjeta"
-                  checked={form.metodo_pago === "tarjeta"}
-                  onChange={handleChange}
-                  icon="💳"
-                  label="Tarjeta"
-                  sublabel="Paga con tarjeta al recibir o recoger"
-                />
-                <RadioCard
-                  id="pago_transferencia"
-                  name="metodo_pago"
-                  value="transferencia"
-                  checked={form.metodo_pago === "transferencia"}
-                  onChange={handleChange}
-                  icon="🏦"
-                  label="Transferencia bancaria"
-                  sublabel="Te indicamos los datos al confirmar"
-                />
+                {metodosPago
+                  .filter((m) =>
+                    esRecogida ? m.activo_recogida : m.activo_domicilio,
+                  )
+                  .map((m) => (
+                    <RadioCard
+                      key={m.clave}
+                      id={`pago_${m.clave}`}
+                      name="metodo_pago"
+                      value={m.clave}
+                      checked={form.metodo_pago === m.clave}
+                      onChange={handleChange}
+                      icon={m.icono}
+                      label={m.nombre}
+                      sublabel={
+                        esRecogida
+                          ? "Paga al recoger"
+                          : "Paga al recibir"
+                      }
+                    />
+                  ))}
+                {metodosPago.filter((m) =>
+                  esRecogida ? m.activo_recogida : m.activo_domicilio,
+                ).length === 0 && (
+                  <div className="alert alert-warning rounded-3 py-2 small">
+                    <i className="bi bi-exclamation-circle me-2" />
+                    No hay métodos de pago disponibles para este tipo de entrega.
+                  </div>
+                )}
                 {errores["metodo_pago"] && (
                   <div className="text-danger small mt-1">
                     {errores["metodo_pago"][0]}
+                  </div>
+                )}
+              </div>
+
+              {/* Hora de entrega/recogida */}
+              <div className="border rounded-4 p-4 shadow-sm bg-white mt-4">
+                <h5
+                  className="fw-bold color-primario mb-3"
+                  style={{ fontFamily: "var(--title-font)" }}
+                >
+                  {esRecogida ? "¿Cuándo pasas a recogerlo?" : "¿Cuándo lo quieres recibir?"}
+                </h5>
+                <RadioCard
+                  id="hora_asap"
+                  name="modo_hora"
+                  value="asap"
+                  checked={modoHora === "asap"}
+                  onChange={() => {
+                    setModoHora("asap");
+                    setHoraDeseada("");
+                  }}
+                  icon="⚡"
+                  label="Lo antes posible"
+                  sublabel="En cuanto esté listo"
+                />
+                <RadioCard
+                  id="hora_programar"
+                  name="modo_hora"
+                  value="programar"
+                  checked={modoHora === "programar"}
+                  onChange={() => setModoHora("programar")}
+                  icon="🕐"
+                  label="Programar hora"
+                  sublabel="Elige la hora que prefieras"
+                />
+
+                {modoHora === "programar" && (
+                  <div className="mt-3">
+                    {slots.length === 0 ? (
+                      <div className="alert alert-warning rounded-3 py-2 small">
+                        <i className="bi bi-exclamation-circle me-2" />
+                        No hay horarios disponibles para hoy.
+                      </div>
+                    ) : (
+                      <>
+                        <label className="form-label fw-semibold small color-primario">
+                          Hora deseada
+                        </label>
+                        <select
+                          id="field-hora_deseada"
+                          className={`form-control rounded-3${errores?.hora_deseada ? " is-invalid" : ""}`}
+                          value={horaDeseada}
+                          onChange={(e) => setHoraDeseada(e.target.value)}
+                        >
+                          <option value="">— Selecciona una hora —</option>
+                          {slots.map((slot) => (
+                            <option key={slot} value={slot}>
+                              {slot}
+                            </option>
+                          ))}
+                        </select>
+                        {errores?.hora_deseada && (
+                          <div className="invalid-feedback d-block">
+                            {errores.hora_deseada[0]}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -770,12 +883,27 @@ const Checkout = () => {
 
                   <hr className="my-2" />
 
-                  <div className="d-flex justify-content-between align-items-center mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
                     <span className="fw-bold">Total estimado</span>
                     <span className="fw-bold fs-5 color-secundario">
                       {totalEstimado !== null ? formatEUR(totalEstimado) : "—"}
                     </span>
                   </div>
+
+                  {pedidoMinimoNoAlcanzado && (
+                    <div className="alert alert-warning rounded-3 py-2 small mb-3 d-flex align-items-start gap-2">
+                      <i className="bi bi-exclamation-triangle-fill mt-1" />
+                      <div>
+                        <strong>Pedido mínimo para esta zona: {formatEUR(zonaSeleccionada.pedido_minimo)}</strong>
+                        <br />
+                        Te faltan{" "}
+                        <strong>
+                          {formatEUR(Number(zonaSeleccionada.pedido_minimo) - subtotal)}
+                        </strong>{" "}
+                        para poder realizar el pedido.
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
