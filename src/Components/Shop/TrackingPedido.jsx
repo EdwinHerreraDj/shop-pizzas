@@ -339,7 +339,13 @@ export default function TrackingPedido() {
     if (!pedido) return;
     const terminales = ["entregado", "cancelado"];
     if (terminales.includes(pedido.estado)) {
-      localStorage.removeItem("pedido_activo");
+      const activos = JSON.parse(localStorage.getItem("pedidos_activos") || "[]");
+      const nuevos = activos.filter((c) => c !== pedido.codigo);
+      if (nuevos.length > 0) {
+        localStorage.setItem("pedidos_activos", JSON.stringify(nuevos));
+      } else {
+        localStorage.removeItem("pedidos_activos");
+      }
     }
   }, [pedido]);
 

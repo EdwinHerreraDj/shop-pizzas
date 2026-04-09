@@ -517,7 +517,9 @@ const Checkout = () => {
       const { data } = await clientesAxios.post("/shop/pedidos", payload);
       setPedidoCreado(data.pedido);
       vaciarCarrito();
-      localStorage.setItem("pedido_activo", data.pedido.codigo);
+      const activos = JSON.parse(localStorage.getItem("pedidos_activos") || "[]");
+      if (!activos.includes(data.pedido.codigo)) activos.push(data.pedido.codigo);
+      localStorage.setItem("pedidos_activos", JSON.stringify(activos));
       toast.success("¡Pedido realizado correctamente!");
     } catch (error) {
       if (error.response?.status === 422) {
