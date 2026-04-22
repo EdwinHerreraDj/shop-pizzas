@@ -78,6 +78,7 @@ export default function useShop() {
       tipo: "articulo",
       articuloId: producto.id,
       nombre: producto.nombre,
+      esComida: producto.esComida === true,
       tamano,
       tamanoId,
       cantidad: 1,

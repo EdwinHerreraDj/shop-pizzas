@@ -247,57 +247,100 @@ function RadioCard({
 // PedidoConfirmado
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PedidoConfirmado({ pedido }) {
+function PedidoConfirmado({ pedido, carritoSnapshot = [] }) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const subtotal = carritoSnapshot.reduce(
+    (acc, item) => acc + (Number(item.precioTotal) || 0),
+    0,
+  );
+
   return (
-    <div className="section-padding bg-white">
-      <div className="container text-center py-5" style={{ maxWidth: 480 }}>
-        <div
-          className="d-inline-flex align-items-center justify-content-center rounded-circle mb-4"
-          style={{
-            width: 80,
-            height: 80,
-            backgroundColor: "#eb002915",
-            fontSize: "2.2rem",
-          }}
-        >
-          ✓
-        </div>
-        <h2 className="fw-bold color-primario mb-2">¡Pedido realizado!</h2>
-        <p className="text-muted mb-1">
-          Código:{" "}
-          <strong
+    <div className="section-padding bg-color2">
+      <div className="container" style={{ maxWidth: 580 }}>
+        {/* Cabecera */}
+        <div className="text-center mb-4">
+          <div
+            className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
             style={{
-              fontFamily: "monospace",
-              letterSpacing: "2px",
-              color: "#eb0029",
+              width: 80,
+              height: 80,
+              backgroundColor: "#eb002915",
+              fontSize: "2.2rem",
             }}
           >
-            {pedido.codigo}
-          </strong>
-        </p>
-        <p className="text-muted mb-4">
-          {pedido.tipo_entrega === "recogida"
-            ? "Pasa a recogerlo cuando esté listo."
-            : "En breve comenzaremos a prepararlo."}
-        </p>
+            ✓
+          </div>
+          <h2 className="fw-bold color-primario mb-2">¡Pedido realizado!</h2>
+          <p className="text-muted mb-1">
+            Código:{" "}
+            <strong
+              style={{
+                fontFamily: "monospace",
+                letterSpacing: "2px",
+                color: "#eb0029",
+              }}
+            >
+              {pedido.codigo}
+            </strong>
+          </p>
+          <p className="text-muted mb-0">
+            {pedido.tipo_entrega === "recogida"
+              ? "Pasa a recogerlo cuando esté listo."
+              : "En breve comenzaremos a prepararlo."}
+          </p>
+        </div>
 
-        {/* Botón de tracking — nuevo */}
-        <Link
-          to={`/pedido/${pedido.codigo}`}
-          className="btn rounded-pill px-5 py-2 text-white fw-semibold d-block mb-3"
-          style={{ backgroundColor: "#eb0029" }}
-        >
-          <i className="bi bi-geo-alt me-2" />
-          Seguir mi pedido
-        </Link>
+        {/* Resumen detallado del pedido */}
+        {carritoSnapshot.length > 0 && (
+          <div className="border rounded-4 p-4 shadow-sm bg-white mb-4">
+            <h5
+              className="fw-bold color-primario mb-3"
+              style={{ fontFamily: "var(--title-font)" }}
+            >
+              <i className="bi bi-receipt me-2" />
+              Resumen de tu pedido
+            </h5>
 
-        <Link
-          to="/"
-          className="btn btn-outline rounded-pill px-5 py-2 fw-semibold"
-          style={{ border: "1px solid #eb0029", color: "#eb0029" }}
-        >
-          Volver al inicio
-        </Link>
+            <div className="d-flex flex-column gap-3">
+              {carritoSnapshot.map((item, i) => (
+                <ResumenItem key={item.uid ?? i} item={item} />
+              ))}
+            </div>
+
+            {/* Totales */}
+            <div className="border-top mt-3 pt-3">
+              <div className="d-flex justify-content-between align-items-center">
+                <span className="fw-bold">Total</span>
+                <span className="fw-bold fs-5 color-secundario">
+                  {formatEUR(subtotal)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Botones */}
+        <div className="text-center">
+          <Link
+            to={`/pedido/${pedido.codigo}`}
+            className="btn rounded-pill px-5 py-2 text-white fw-semibold d-block mb-3"
+            style={{ backgroundColor: "#eb0029" }}
+          >
+            <i className="bi bi-geo-alt me-2" />
+            Seguir mi pedido
+          </Link>
+
+          <Link
+            to="/"
+            className="btn btn-outline rounded-pill px-5 py-2 fw-semibold"
+            style={{ border: "1px solid #eb0029", color: "#eb0029" }}
+          >
+            Volver al inicio
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -324,6 +367,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [errores, setErrores] = useState({});
   const [pedidoCreado, setPedidoCreado] = useState(null);
+  const [carritoSnapshot, setCarritoSnapshot] = useState([]);
   const [zonas, setZonas] = useState([]);
   const [loadingZonas, setLoadingZonas] = useState(true);
   const [errorZonas, setErrorZonas] = useState(false);
@@ -385,11 +429,14 @@ const Checkout = () => {
         ? subtotal
         : null;
 
+  // Comparar en céntimos (enteros) para evitar errores de punto flotante
+  // El pedido mínimo se valida contra el total (subtotal + gastos de envío)
+  const totalParaMinimo = subtotal + (gastosEnvio ?? 0);
   const pedidoMinimoNoAlcanzado =
     !esRecogida &&
     zonaSeleccionada &&
     Number(zonaSeleccionada.pedido_minimo) > 0 &&
-    subtotal < Number(zonaSeleccionada.pedido_minimo);
+    Math.round(totalParaMinimo * 100) < Math.round(Number(zonaSeleccionada.pedido_minimo) * 100);
 
   const submitBloqueado =
     loading ||
@@ -427,13 +474,15 @@ const Checkout = () => {
     );
   }
 
-  if (pedidoCreado) return <PedidoConfirmado pedido={pedidoCreado} />;
+  if (pedidoCreado) return <PedidoConfirmado pedido={pedidoCreado} carritoSnapshot={carritoSnapshot} />;
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
-      const next = { ...prev, [name]: value };
+      // Teléfono: solo dígitos, máximo 9
+      const val = name === "telefono" ? value.replace(/\D/g, "").slice(0, 9) : value;
+      const next = { ...prev, [name]: val };
       if (name === "codigo_postal") next.barrio = "";
       if (name === "tipo_entrega") {
         if (value === "recogida") {
@@ -467,6 +516,24 @@ const Checkout = () => {
     e.preventDefault();
     if (carrito.length === 0) {
       toast.error("El carrito está vacío");
+      return;
+    }
+
+    const tieneComida = carrito.some(
+      (item) =>
+        item.tipo === "pizza-entera" ||
+        item.tipo === "pizza-mitades" ||
+        item.esComida === true,
+    );
+    if (!tieneComida) {
+      toast.error("El pedido debe incluir al menos un artículo de comida");
+      return;
+    }
+
+    if (!/^\d{9}$/.test(form.telefono)) {
+      setErrores({ "cliente.telefono": ["El teléfono debe tener exactamente 9 dígitos."] });
+      document.getElementById("field-telefono")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast.error("El teléfono debe tener 9 dígitos");
       return;
     }
 
@@ -515,11 +582,59 @@ const Checkout = () => {
       };
 
       const { data } = await clientesAxios.post("/shop/pedidos", payload);
-      setPedidoCreado(data.pedido);
-      vaciarCarrito();
+      setCarritoSnapshot([...carrito]);
+      const pedido = data.pedido;
+
+      // Registramos el pedido como activo (para el banner de tracking)
       const activos = JSON.parse(localStorage.getItem("pedidos_activos") || "[]");
-      if (!activos.includes(data.pedido.codigo)) activos.push(data.pedido.codigo);
+      if (!activos.includes(pedido.codigo)) activos.push(pedido.codigo);
       localStorage.setItem("pedidos_activos", JSON.stringify(activos));
+
+      // ── Pago con tarjeta → redirigir al TPV de Redsys ───────────────────
+      if (form.metodo_pago === "tarjeta") {
+        try {
+          const { data: redsys } = await clientesAxios.post(
+            `/shop/pedidos/${pedido.codigo}/redsys/iniciar`,
+          );
+
+          // Vaciamos el carrito antes de salir al TPV
+          vaciarCarrito();
+
+          // Creamos un <form> oculto y hacemos submit hacia el TPV
+          const formEl = document.createElement("form");
+          formEl.method = "POST";
+          formEl.action = redsys.url_tpv;
+          formEl.style.display = "none";
+
+          const campos = {
+            Ds_SignatureVersion: redsys.Ds_SignatureVersion,
+            Ds_MerchantParameters: redsys.Ds_MerchantParameters,
+            Ds_Signature: redsys.Ds_Signature,
+          };
+
+          Object.entries(campos).forEach(([name, value]) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            formEl.appendChild(input);
+          });
+
+          document.body.appendChild(formEl);
+          formEl.submit();
+          return; // No continuamos; el navegador sale de la SPA hacia el TPV
+        } catch (e) {
+          toast.error(
+            e?.response?.data?.message ??
+              "No se pudo iniciar el pago con tarjeta",
+          );
+          return;
+        }
+      }
+
+      // ── Otros métodos (efectivo, transferencia): pantalla de confirmación
+      setPedidoCreado(pedido);
+      vaciarCarrito();
       toast.success("¡Pedido realizado correctamente!");
     } catch (error) {
       if (error.response?.status === 422) {
@@ -896,11 +1011,11 @@ const Checkout = () => {
                     <div className="alert alert-warning rounded-3 py-2 small mb-3 d-flex align-items-start gap-2">
                       <i className="bi bi-exclamation-triangle-fill mt-1" />
                       <div>
-                        <strong>Pedido mínimo para esta zona: {formatEUR(zonaSeleccionada.pedido_minimo)}</strong>
+                        <strong>Pedido mínimo para esta zona: {formatEUR(zonaSeleccionada.pedido_minimo)} (envío incluido)</strong>
                         <br />
                         Te faltan{" "}
                         <strong>
-                          {formatEUR(Number(zonaSeleccionada.pedido_minimo) - subtotal)}
+                          {formatEUR(Number(zonaSeleccionada.pedido_minimo) - totalParaMinimo)}
                         </strong>{" "}
                         para poder realizar el pedido.
                       </div>

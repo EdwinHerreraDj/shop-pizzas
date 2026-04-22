@@ -24,7 +24,9 @@ export default function ShopCard({ producto, onPersonalizar, onAgregar }) {
   const DEFAULT_IMG = "/assets/img/food-items/item1_4.png";
   const imgSrc = producto?.imagen || DEFAULT_IMG;
 
-  const price = getPrecioMinimo(producto?.tamanos || []);
+  const tamanos = producto?.tamanos || [];
+  const price = getPrecioMinimo(tamanos);
+  const tieneVariosTamanos = tamanos.length > 1;
 
   return (
     <div className="dishes-card style2 wow fadeInUp" data-wow-delay="0.2s">
@@ -54,7 +56,17 @@ export default function ShopCard({ producto, onPersonalizar, onAgregar }) {
         <h3>{producto?.nombre}</h3>
         <div className="text">{producto?.descripcion || "Sin descripción"}</div>
 
-        <h6>{formatEUR(price)}</h6>
+        <h6>
+          {tieneVariosTamanos && (
+            <span
+              className="text-muted fw-normal me-1"
+              style={{ fontSize: "0.75em" }}
+            >
+              Desde
+            </span>
+          )}
+          {formatEUR(price)}
+        </h6>
 
         <div className="flex gap-2">
           {producto?.personalizable ? (

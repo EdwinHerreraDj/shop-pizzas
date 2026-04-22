@@ -1,7 +1,14 @@
-import { Link } from "react-router-dom";
 import Slider from "react-slick";
 
 const HeroBanner1 = () => {
+    const irAPizzas = (e) => {
+        e.preventDefault();
+        const el = document.getElementById("pizzas");
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
+
 
     const settings = {
         dots: false,
@@ -39,13 +46,13 @@ const HeroBanner1 = () => {
             img: '/assets/img/banner/bannerThumb1_1.png',
             subtitle: 'pizzería casa de campo',
             title: 'Pizzas artesanas únicas',
-            btnname: 'Pide ahora'
+            btnname: 'Haz tu pedido'
         },
         {
             img: '/assets/img/banner/bannerThumb1_3.png',
             subtitle: 'pizzería casa de campo',
             title: 'Tu pizza caliente en minutos',
-            btnname: 'Ordenar'
+            btnname: 'Haz tu pedido'
         },
     ];
 
@@ -87,9 +94,28 @@ const HeroBanner1 = () => {
                                                                         data-duration="2s" data-delay=".5s">
                                                                         {item.title}
                                                                     </h1>
-                                                                    <Link className="theme-btn" to="/menu"
-                                                                        data-animation="slideInRight" data-duration="2s"
-                                                                        data-delay=".7s">{item.btnname} <i className="bi bi-arrow-right"></i></Link>
+                                                                    <a
+                                                                        className="theme-btn btn-pedido-hero"
+                                                                        href="#pizzas"
+                                                                        onClick={irAPizzas}
+                                                                        data-animation="slideInRight"
+                                                                        data-duration="2s"
+                                                                        data-delay=".7s"
+                                                                        style={{
+                                                                            fontSize: "1.2rem",
+                                                                            padding: "18px 44px",
+                                                                            fontWeight: 700,
+                                                                            letterSpacing: "0.3px",
+                                                                            boxShadow:
+                                                                                "0 10px 30px rgba(235, 0, 41, 0.35)",
+                                                                        }}
+                                                                    >
+                                                                        {item.btnname}{" "}
+                                                                        <i
+                                                                            className="bi bi-arrow-down-circle ms-1"
+                                                                            style={{ fontSize: "1.3rem" }}
+                                                                        />
+                                                                    </a>
                                                                 </div>
                                                             </div>
                                                         </div>

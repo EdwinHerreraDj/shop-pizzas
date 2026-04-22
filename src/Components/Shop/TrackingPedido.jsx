@@ -238,6 +238,92 @@ function BarraProgreso({ estado, tipoEntrega }) {
 // Resumen del pedido
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Separa item.ingredientes[] (del backend) en extras, quitados,
+ * y agrupa por mitad (A/B) si aplica.
+ *
+ * Estructura backend de cada ingrediente:
+ *   { tipo: 'extra'|'quitado', mitad: 'A'|'B'|null, cantidad, precio,
+ *     ingrediente: { id, nombre } }
+ */
+function parseIngredientes(ingredientes = []) {
+  const extras = [];
+  const quitados = [];
+  const mitadA = { nombre: null, extras: [], quitados: [] };
+  const mitadB = { nombre: null, extras: [], quitados: [] };
+  let tieneMitades = false;
+
+  ingredientes.forEach((ing) => {
+    const nombre = ing.ingrediente?.nombre ?? `#${ing.ingrediente_id}`;
+    const parsed = { nombre, cantidad: ing.cantidad ?? 1 };
+
+    if (ing.mitad === "A" || ing.mitad === "B") {
+      tieneMitades = true;
+      const destino = ing.mitad === "A" ? mitadA : mitadB;
+      if (ing.tipo === "extra") destino.extras.push(parsed);
+      else destino.quitados.push(parsed);
+    } else {
+      if (ing.tipo === "extra") extras.push(parsed);
+      else quitados.push(parsed);
+    }
+  });
+
+  return { extras, quitados, mitadA, mitadB, tieneMitades };
+}
+
+function IngredientePills({ extras = [], quitados = [] }) {
+  if (!extras.length && !quitados.length) return null;
+  return (
+    <div className="mt-1">
+      {extras.map((e, i) => (
+        <span
+          key={`e${i}`}
+          className="d-inline-flex align-items-center gap-1 rounded-pill px-2 py-0 me-1 mb-1 bg-success bg-opacity-10 text-success border border-success-subtle"
+          style={{ fontSize: "0.7rem" }}
+        >
+          + {e.nombre}
+          {e.cantidad > 1 && ` x${e.cantidad}`}
+        </span>
+      ))}
+      {quitados.map((q, i) => (
+        <span
+          key={`q${i}`}
+          className="d-inline-flex align-items-center gap-1 rounded-pill px-2 py-0 me-1 mb-1 bg-danger bg-opacity-10 text-danger border border-danger-subtle text-decoration-line-through"
+          style={{ fontSize: "0.7rem" }}
+        >
+          {q.nombre}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function BloqMitad({ label, mitadNombre, mitadData }) {
+  if (!mitadData.extras.length && !mitadData.quitados.length && !mitadNombre)
+    return null;
+  return (
+    <div className="rounded-3 p-2 mt-1" style={{ background: "#f1f5f9" }}>
+      <div className="d-flex align-items-center gap-2">
+        <span
+          className="d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+          style={{
+            width: 18,
+            height: 18,
+            fontSize: "0.6rem",
+            backgroundColor: "#eb0029",
+          }}
+        >
+          {label}
+        </span>
+        <span className="fw-semibold" style={{ fontSize: "0.75rem" }}>
+          {mitadNombre ?? "Personalizada"}
+        </span>
+      </div>
+      <IngredientePills extras={mitadData.extras} quitados={mitadData.quitados} />
+    </div>
+  );
+}
+
 function ResumenPedido({ pedido }) {
   const eur = (n) => Number(n || 0).toFixed(2) + " €";
 
@@ -252,25 +338,54 @@ function ResumenPedido({ pedido }) {
       >
         Tu pedido
       </div>
-      {(pedido.items ?? []).map((item) => (
-        <div
-          key={item.id}
-          className="d-flex justify-content-between align-items-start py-1 border-bottom"
-          style={{ borderColor: "#e2e8f0" }}
-        >
-          <div>
-            <span className="fw-semibold small">
-              {item.cantidad}× {item.nombre}
-            </span>
-            {item.tamano && (
-              <span className="text-muted small ms-1">({item.tamano})</span>
+      {(pedido.items ?? []).map((item) => {
+        const { extras, quitados, mitadA, mitadB, tieneMitades } =
+          parseIngredientes(item.ingredientes);
+
+        // Nombres de mitades: campo directo o fallback parseando "NombreA / NombreB"
+        let nombreMitadA = item.nombre_mitad_a;
+        let nombreMitadB = item.nombre_mitad_b;
+        if (tieneMitades && !nombreMitadA && !nombreMitadB && item.nombre?.includes(" / ")) {
+          const partes = item.nombre.split(" / ");
+          nombreMitadA = partes[0]?.trim();
+          nombreMitadB = partes[1]?.trim();
+        }
+
+        return (
+          <div
+            key={item.id}
+            className="py-2 border-bottom"
+            style={{ borderColor: "#e2e8f0" }}
+          >
+            <div className="d-flex justify-content-between align-items-start">
+              <div className="flex-grow-1">
+                <span className="fw-semibold small">
+                  {item.cantidad}× {tieneMitades ? "Pizza por mitades" : item.nombre}
+                </span>
+                {item.tamano && (
+                  <span className="text-muted small ms-1">({item.tamano})</span>
+                )}
+              </div>
+              <span className="small text-muted ms-2 flex-shrink-0">
+                {eur(item.subtotal)}
+              </span>
+            </div>
+
+            {/* Mitades con sus ingredientes */}
+            {tieneMitades && (
+              <>
+                <BloqMitad label="1" mitadNombre={nombreMitadA} mitadData={mitadA} />
+                <BloqMitad label="2" mitadNombre={nombreMitadB} mitadData={mitadB} />
+              </>
+            )}
+
+            {/* Extras y quitados (artículos normales / sin mitad) */}
+            {!tieneMitades && (
+              <IngredientePills extras={extras} quitados={quitados} />
             )}
           </div>
-          <span className="small text-muted ms-2 flex-shrink-0">
-            {eur(item.subtotal)}
-          </span>
-        </div>
-      ))}
+        );
+      })}
       <div className="d-flex justify-content-between pt-2">
         <span className="small text-muted">Subtotal</span>
         <span className="small">{eur(pedido.subtotal)}</span>

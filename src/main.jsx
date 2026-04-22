@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { router } from "./Routes/Routes.jsx";
 import { CarritoProvider } from "./context/CarritoContext.jsx";
 import { ToastContainer } from "react-toastify";
+import { setQueryClient } from "./config/axios.js";
 import "react-toastify/dist/ReactToastify.css";
 
 // 🔹 Estilos globales
@@ -16,6 +17,10 @@ import "./assets/main.css";
 
 // Crear instancia de React Query
 const queryClient = new QueryClient();
+
+// Permite al interceptor de axios actualizar la caché del query client
+// cuando el backend responde 503 (tienda cerrada).
+setQueryClient(queryClient);
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

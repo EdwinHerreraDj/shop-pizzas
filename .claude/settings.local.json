@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vite *)",
+      "Bash(php artisan *)",
+      "Bash(grep -E \"\\\\.\\(php|jsx\\)$\")",
+      "Bash(xargs ls *)",
+      "Read(//c/Users/USER/Documents/ALMINARES/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\database\\migrations",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\app\\Models",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\app\\Http\\Controllers\\Api\\Pedido",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\app\\Http\\Requests",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\app\\Services",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\app\\Http\\Resources",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\app\\Http\\Controllers\\Api\\Shop",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\app\\Http\\Controllers\\Api\\Admin",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\resources\\js\\react\\pages\\categorias-articulos",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\routes",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\resources\\views\\admin",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\resources\\js\\react\\pages",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\resources\\js\\react",
+      "c:\\Users\\USER\\Documents\\ALMINARES\\APPS WEBS\\APP-TIENDA-PIZZERIA\\PIZZERIA LARAVEL\\resources\\views\\layouts\\shared"
+    ]
+  }
+}

@@ -155,6 +155,7 @@ export default function ModalPersonalizar({
       articuloId: data.id,
       tipoProductoId: data.tipo_producto_id,
       nombre: data.nombre,
+      esComida: true,
       tamanoId: tamanoSeleccionado?.id ?? null,
       tamano: tamanoSeleccionado?.nombre ?? null,
       cantidad: 1,
@@ -404,7 +405,9 @@ export default function ModalPersonalizar({
                               {ing.modo === "base" ? (
                                 <small className="text-muted">
                                   Ingrediente base
-                                  {ing.obligatorio && " · Obligatorio"}
+                                  {precio > 0 && (
+                                    <> · +{precio.toFixed(2)} € por extra</>
+                                  )}
                                 </small>
                               ) : (
                                 <small className="text-muted">
