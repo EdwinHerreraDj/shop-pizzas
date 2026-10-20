@@ -1,6 +1,22 @@
 import { useCarrito } from "../../context/CarritoContext";
 import { Link } from "react-router-dom";
 import usePrecios from "../../hooks/usePrecios";
+import "../../assets/crear-pizza.css";
+
+/* Nombre amable según el tipo de producto */
+const nombreItem = (item) => {
+  if (item.tipo === "pizza-mitades") return "Pizza mitad y mitad";
+  if (item.tipo === "pizza-entera") return "Pizza a tu gusto";
+  return item.nombre || "Producto";
+};
+
+/* Resumen corto de cambios: "+2 extras · sin cebolla" */
+const resumenCambios = (extras = [], quitados = []) => {
+  const partes = [];
+  if (extras.length) partes.push(`+${extras.length} extra${extras.length > 1 ? "s" : ""}`);
+  if (quitados.length) partes.push(`sin ${quitados.map((i) => i.nombre.toLowerCase()).join(", ")}`);
+  return partes.join(" · ");
+};
 
 export default function CarritoSidebar() {
   const {
@@ -12,161 +28,109 @@ export default function CarritoSidebar() {
   } = useCarrito();
   const { formatEUR } = usePrecios();
 
-  /* ── Helpers de render ─────────────────────────── */
-  const renderExtras = (extras = []) => {
-    if (!extras.length) return null;
-    return (
-      <ul className="mb-1 ps-3 text-muted small">
-        {extras.map((i) => (
-          <li key={i.id}>
-            + {i.nombre}
-            {i.cantidad > 1 && <span> x{i.cantidad}</span>}
-          </li>
-        ))}
-      </ul>
-    );
-  };
+  const unidades = carrito.reduce((a, i) => a + (i.cantidad || 0), 0);
 
-  const renderQuitados = (quitados = []) => {
-    if (!quitados.length) return null;
-    return (
-      <p className="text-muted small mb-0">
-        – sin {quitados.map((i) => i.nombre).join(", ")}
-      </p>
-    );
-  };
-
-  const renderMitad = (titulo, mitad) => {
-    if (!mitad) return null;
-    return (
-      <div className="mt-1 ms-2">
-        <strong>{titulo}:</strong> {mitad.nombre || "Personalizada"}
-        {renderExtras(mitad.ingredientesExtras)}
-        {renderQuitados(mitad.ingredientesQuitados)}
-      </div>
-    );
-  };
-
-  /* ── Controles de cantidad ─────────────────────── */
-  const renderCantidadControls = (item, index) => (
-    <div className="d-flex align-items-center gap-2 mt-2">
-      <button
-        className="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
-        style={{ width: 24, height: 24, fontSize: "0.75rem" }}
-        onClick={() =>
-          item.cantidad === 1
-            ? eliminarItem(index)
-            : actualizarCantidad(index, item.cantidad - 1)
-        }
-      >
-        {item.cantidad === 1 ? <i className="bi bi-trash" /> : "−"}
-      </button>
-
-      <span className="fw-semibold small">{item.cantidad}</span>
-
-      <button
-        className="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
-        style={{ width: 24, height: 24, fontSize: "0.75rem" }}
-        onClick={() => actualizarCantidad(index, item.cantidad + 1)}
-      >
-        +
-      </button>
-    </div>
-  );
-
-  /* ── Render ────────────────────────────────────── */
   return (
-    <div className="single-sidebar-widget">
-      <h5 className="widget-title d-flex justify-content-between align-items-center">
-        Tu pedido
+    <div className="lateral-pedido">
+      {/* Cabecera */}
+      <div className="lateral-pedido-cabecera">
+        <span className="cp-seccion-icono">
+          <i className="bi bi-basket2-fill" />
+        </span>
+        <div className="flex-grow-1">
+          <h3 className="cp-seccion-titulo">Tu pedido</h3>
+          <p className="cp-seccion-sub">
+            {unidades === 0
+              ? "Aún no has añadido nada"
+              : `${unidades} ${unidades === 1 ? "producto" : "productos"}`}
+          </p>
+        </div>
         {carrito.length > 0 && (
-          <button
-            className="btn btn-sm btn-outline-vaciar rounded-pill px-3 ms-2 color-secundario"
-            onClick={vaciarCarrito}
-          >
+          <button type="button" className="lateral-vaciar" onClick={vaciarCarrito}>
             Vaciar
           </button>
         )}
-      </h5>
+      </div>
 
       {carrito.length === 0 ? (
-        <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted">
-          <i className="bi bi-info-circle me-1" /> Tu carrito está vacío.
+        <div className="lateral-vacio">
+          <i className="bi bi-emoji-smile" />
+          <span>Añade tu primera pizza y aparecerá aquí.</span>
         </div>
       ) : (
-        <ul className="list-group list-group-flush small">
-          {carrito.map((item, index) => (
-            <li
-              key={item.uid}
-              className="list-group-item d-flex justify-content-between align-items-start py-2 px-0 border-0 border-bottom"
-            >
-              <div className="flex-grow-1">
-                {/* ── ARTÍCULO (normal o personalizado) ── */}
-                {item.tipo === "articulo" && (
-                  <>
-                    <strong>{item.nombre}</strong>
-                    {item.tamano && (
-                      <span className="text-muted"> ({item.tamano})</span>
-                    )}
-                    {renderExtras(item.ingredientesExtras)}
-                    {renderQuitados(item.ingredientesQuitados)}
-                  </>
-                )}
+        <>
+          <ul className="lateral-lista">
+            {carrito.map((item, index) => {
+              const detalle =
+                item.tipo === "pizza-mitades"
+                  ? [item.mitades?.mitadA?.nombre, item.mitades?.mitadB?.nombre]
+                      .filter(Boolean)
+                      .join(" + ")
+                  : resumenCambios(item.ingredientesExtras, item.ingredientesQuitados);
 
-                {/* ── PIZZA ENTERA ── */}
-                {item.tipo === "pizza-entera" && (
-                  <>
-                    <strong>Pizza personalizada</strong>{" "}
-                    {item.tamano && (
-                      <span className="text-muted">({item.tamano})</span>
-                    )}
-                    {renderExtras(item.ingredientesExtras)}
-                    {renderQuitados(item.ingredientesQuitados)}
-                  </>
-                )}
+              return (
+                <li key={item.uid ?? index} className="lateral-item">
+                  <div className="d-flex justify-content-between align-items-start gap-2">
+                    <div style={{ minWidth: 0 }}>
+                      <div className="lateral-item-nombre">{nombreItem(item)}</div>
+                      <div className="lateral-item-detalle">
+                        {item.tamano && <span>{item.tamano}</span>}
+                        {item.tamano && detalle && <span> · </span>}
+                        {detalle && <span>{detalle}</span>}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="lateral-quitar"
+                      onClick={() => eliminarItem(index)}
+                      aria-label={`Quitar ${nombreItem(item)}`}
+                    >
+                      <i className="bi bi-x-lg" />
+                    </button>
+                  </div>
 
-                {/* ── PIZZA POR MITADES ── */}
-                {item.tipo === "pizza-mitades" && (
-                  <>
-                    <strong>Pizza por mitades</strong>{" "}
-                    {item.tamano && (
-                      <span className="text-muted">({item.tamano})</span>
-                    )}
-                    {renderMitad("Mitad 1", item.mitades?.mitadA)}
-                    {renderMitad("Mitad 2", item.mitades?.mitadB)}
-                  </>
-                )}
+                  <div className="d-flex justify-content-between align-items-center mt-2">
+                    <div className="cp-cantidad lateral-cantidad">
+                      <button
+                        type="button"
+                        className="cp-cantidad-btn menos"
+                        onClick={() =>
+                          item.cantidad === 1
+                            ? eliminarItem(index)
+                            : actualizarCantidad(index, item.cantidad - 1)
+                        }
+                        aria-label={item.cantidad === 1 ? "Quitar" : "Uno menos"}
+                      >
+                        <i className={`bi ${item.cantidad === 1 ? "bi-trash3" : "bi-dash-lg"}`} />
+                      </button>
+                      <span className="cp-cantidad-valor">{item.cantidad}</span>
+                      <button
+                        type="button"
+                        className="cp-cantidad-btn mas"
+                        onClick={() => actualizarCantidad(index, item.cantidad + 1)}
+                        aria-label="Uno más"
+                      >
+                        <i className="bi bi-plus-lg" />
+                      </button>
+                    </div>
+                    <span className="lateral-item-precio">{formatEUR(item.precioTotal)}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
 
-                {/* ── Controles +/− ── */}
-                {renderCantidadControls(item, index)}
-              </div>
-
-              <div className="text-end ms-3">
-                <div className="fw-semibold">
-                  {formatEUR(item.precioTotal)}
-                </div>
-                <button
-                  onClick={() => eliminarItem(index)}
-                  className="btn btn-link text-danger btn-sm p-0 mt-1"
-                >
-                  <i className="bi bi-x-circle" />
-                </button>
-              </div>
-            </li>
-          ))}
-
-          {/* ── TOTAL ── */}
-          <li className="list-group-item border-0 mt-2 d-flex justify-content-between fw-bold">
+          <div className="lateral-total">
             <span>Total</span>
             <span>{formatEUR(totalCarrito)}</span>
-          </li>
+          </div>
 
-          <li>
-            <Link to="/shop/cart" className="theme-btn w-100 text-center">
-              Ver carrito
-            </Link>
-          </li>
-        </ul>
+          <Link to="/shop/cart" className="cp-anadir w-100 text-white text-decoration-none mt-3">
+            <i className="bi bi-bag-check-fill" />
+            Ver mi pedido
+            <i className="bi bi-arrow-right" />
+          </Link>
+        </>
       )}
     </div>
   );

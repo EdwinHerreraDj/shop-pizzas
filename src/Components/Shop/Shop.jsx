@@ -8,6 +8,8 @@ import ModalCrearPizza from "../ShopDetails/ModalCrearPizza";
 import ModalPersonalizar from "../ShopDetails/ModalPersonalizar";
 import CarritoSidebar from "../Carrito/CarritoSidebar";
 import ErrorCarga from "./ErrorCarga";
+import { PizzaDibujo } from "../PizzaBuilder/ui";
+import "../../assets/crear-pizza.css";
 
 const Shop1 = () => {
   const {
@@ -56,30 +58,28 @@ const Shop1 = () => {
             >
               <div className="main-sidebar">
                 {/* Crea tu pizza */}
-                <div className="single-sidebar-widget">
-                  <h5 className="widget-title">Crea tu pizza</h5>
-
-                  <div className="card border-0 shadow-sm rounded-4 bg-light">
-                    <div className="card-body p-4">
-                      <h6 className="fw-semibold mb-2">
-                        Personalízala a tu manera
-                      </h6>
-
-                      <p className="text-muted mb-4 small">
-                        Crea tu pizza desde cero o combínala por mitades
-                        eligiendo ingredientes y sabores a tu gusto.
-                      </p>
-
-                      <button
-                        type="button"
-                        className="theme-btn w-100 text-center d-flex align-items-center justify-content-center"
-                        onClick={() => setMostrarModalCrearPizza(true)}
-                      >
-                        <i className="bi bi-plus-circle me-2"></i>
-                        Crear mi pizza
-                      </button>
-                    </div>
+                <div className="lateral-crea mb-4">
+                  <div className="lateral-crea-dibujos" aria-hidden="true">
+                    <PizzaDibujo tipo="entera" size={64} />
+                    <PizzaDibujo tipo="mitades" size={64} />
                   </div>
+                  <span className="lateral-etiqueta">
+                    <i className="bi bi-magic me-1" />
+                    A tu manera
+                  </span>
+                  <h3 className="lateral-crea-titulo">Crea tu pizza</h3>
+                  <p className="lateral-crea-texto">
+                    Desde cero o mitad y mitad: tú eliges los ingredientes y
+                    los sabores.
+                  </p>
+                  <button
+                    type="button"
+                    className="lateral-crea-btn"
+                    onClick={() => setMostrarModalCrearPizza(true)}
+                  >
+                    <i className="bi bi-plus-circle-fill" />
+                    Crear mi pizza
+                  </button>
                 </div>
 
                 {/* Carrito */}
