@@ -91,64 +91,19 @@ const Shop1 = () => {
               className="col-xl-9 col-lg-8 order-1 order-md-2 wow fadeInUp"
               data-wow-delay=".5s"
             >
-              <div className="sort-bar">
-                <div className="row g-sm-0 gy-20 justify-content-between align-items-center">
-                  <div className="col-md">
-                    <p className="woocommerce-result-count">
-                      {" "}
-                      {isLoading
-                        ? "Cargando resultados..."
-                        : `${articulos.length} ${
-                            articulos.length === 1 ? "resultado" : "resultados"
-                          }`}
-                    </p>
-                  </div>
-
-                  <div className="col-md-auto">
-                    <form className="woocommerce-ordering" method="get">
-                      <CategoriasSelect
-                        value={categoria}
-                        onChange={handleCategoriaChange}
-                      />
-                    </form>
-                  </div>
-                  <div className="col-md-auto">
-                    <ul
-                      className="nav nav-pills mb-3"
-                      id="pills-tab"
-                      role="tablist"
-                    >
-                      <li className="nav-item" role="presentation">
-                        <button
-                          className="nav-link active"
-                          id="pills-grid-tab"
-                          data-bs-toggle="pill"
-                          data-bs-target="#pills-grid"
-                          type="button"
-                          role="tab"
-                          aria-controls="pills-grid"
-                          aria-selected="true"
-                        >
-                          <i className="fa-solid fa-grid"></i>
-                        </button>
-                      </li>
-                      <li className="nav-item" role="presentation">
-                        <button
-                          className="nav-link"
-                          id="pills-list-tab"
-                          data-bs-toggle="pill"
-                          data-bs-target="#pills-list"
-                          type="button"
-                          role="tab"
-                          aria-controls="pills-list"
-                          aria-selected="false"
-                        >
-                          <i className="fa-solid fa-list"></i>
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
+              <div className="carta-filtros">
+                <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                  <h2 className="carta-filtros-titulo">
+                    <i className="bi bi-funnel-fill me-2" style={{ color: "#fc791a" }} />
+                    ¿Qué te apetece?
+                  </h2>
+                  <span className="carta-resultados">
+                    {isLoading
+                      ? "Cargando…"
+                      : `${articulos.length} ${articulos.length === 1 ? "producto" : "productos"}`}
+                  </span>
                 </div>
+                <CategoriasSelect value={categoria} onChange={handleCategoriaChange} />
               </div>
 
               {/* PRODUCTOS */}

@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 const formatEUR = (value) =>
   typeof value === "number"
     ? new Intl.NumberFormat("es-ES", {
@@ -20,6 +18,12 @@ const getPrecioMinimo = (tamanos = []) => {
   return Math.min(...valores);
 };
 
+// La descripción llega con Mayúsculas En Cada Palabra: la mostramos en tono natural
+const textoNatural = (texto = "") => {
+  const t = String(texto).trim().toLowerCase();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
+};
+
 export default function ShopCard({ producto, onPersonalizar, onAgregar }) {
   const DEFAULT_IMG = "/assets/img/food-items/item1_4.png";
   const imgSrc = producto?.imagen || DEFAULT_IMG;
@@ -27,77 +31,64 @@ export default function ShopCard({ producto, onPersonalizar, onAgregar }) {
   const tamanos = producto?.tamanos || [];
   const price = getPrecioMinimo(tamanos);
   const tieneVariosTamanos = tamanos.length > 1;
+  const descripcion = textoNatural(producto?.descripcion);
 
   return (
-    <div className="dishes-card style2 wow fadeInUp" data-wow-delay="0.2s">
-      <div className="dishes-thumb">
-        <div className="w-full h-48 overflow-hidden rounded-lg flex items-center justify-center">
-          <img
-            src={imgSrc}
-            alt={producto?.nombre || "thumb"}
-            className="imagen-producto object-cover object-center"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = DEFAULT_IMG;
-            }}
-          />
-        </div>
-
-        <div className="circle-shape">
-          <img
-            className="cir36"
-            src="/assets/img/food-items/circleShape.png"
-            alt="shape"
-          />
-        </div>
+    <article className="carta-card">
+      <div className="carta-card-imagen">
+        <img
+          src={imgSrc}
+          alt={producto?.nombre || "Producto"}
+          loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = DEFAULT_IMG;
+          }}
+        />
+        {tieneVariosTamanos && (
+          <span className="carta-card-tamanos">
+            <i className="bi bi-rulers me-1" />
+            {tamanos.length} tamaños
+          </span>
+        )}
       </div>
 
-      <div className="dishes-content">
-        <h3>{producto?.nombre}</h3>
-        <div className="text">{producto?.descripcion || "Sin descripción"}</div>
+      <div className="carta-card-cuerpo">
+        <h3 className="carta-card-nombre">{producto?.nombre}</h3>
+        {descripcion && <p className="carta-card-descripcion">{descripcion}</p>}
 
-        <h6>
-          {tieneVariosTamanos && (
-            <span
-              className="text-muted fw-normal me-1"
-              style={{ fontSize: "0.75em" }}
-            >
-              Desde
-            </span>
-          )}
-          {formatEUR(price)}
-        </h6>
+        <div className="carta-card-pie">
+          <div className="carta-card-precio">
+            {tieneVariosTamanos && <span>Desde</span>}
+            {formatEUR(price)}
+          </div>
 
-        <div className="flex gap-2">
-          {producto?.personalizable ? (
-            <>
+          <div className="carta-card-acciones">
+            {producto?.personalizable && (
               <button
                 type="button"
-                className="theme-btn style6"
+                className="carta-btn secundario"
                 onClick={() => onPersonalizar?.(producto)}
+                aria-label={`Personalizar ${producto?.nombre}`}
+                title="Personalizar"
               >
-                Personalizar <i className="bi bi-vignette"></i>
+                <i className="bi bi-sliders" />
+                <span>Personalizar</span>
               </button>
-
-              <button
-                type="button"
-                className="theme-btn style6 mt-2"
-                onClick={() => onAgregar?.(producto)}
-              >
-                Añadir <i className="bi bi-basket2"></i>
-              </button>
-            </>
-          ) : (
+            )}
             <button
               type="button"
-              className="theme-btn style6"
+              className="carta-btn principal"
               onClick={() => onAgregar?.(producto)}
+              aria-label={`Añadir ${producto?.nombre}`}
             >
-              Añadir <i className="bi bi-basket2"></i>
+              <i className="bi bi-bag-plus-fill" />
+              <span>Añadir</span>
             </button>
-          )}
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
