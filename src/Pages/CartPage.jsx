@@ -1,14 +1,16 @@
-import BreadCumb from "../Components/Common/BreadCumb";
+import PageHero from "../Components/Common/PageHero";
 import Cart from "../Components/Shop/Cart";
 
 const CartPage = () => {
     return (
         <div>
-             <BreadCumb
-                bgimg="/assets/img/bg/breadcumb.jpg"
-                Title="Carrito"
-            ></BreadCumb>    
-            <Cart></Cart>         
+            <PageHero
+                titulo="Tu carrito"
+                subtitulo="Revisa tu pedido antes de terminar."
+                icono="bi-basket2-fill"
+                migas={[{ to: "/shop", texto: "Nuestra carta" }]}
+            />
+            <Cart></Cart>
         </div>
     );
 };

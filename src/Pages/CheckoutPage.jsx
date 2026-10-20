@@ -1,14 +1,16 @@
-import BreadCumb from "../Components/Common/BreadCumb";
+import PageHero from "../Components/Common/PageHero";
 import Checkout from "../Components/Shop/Checkout";
 
 const CheckoutPage = () => {
     return (
         <div>
-              <BreadCumb
-                bgimg="/assets/img/bg/breadcumb.jpg"
-                Title="Checkout"
-            ></BreadCumb>   
-            <Checkout></Checkout>         
+            <PageHero
+                titulo="Finalizar pedido"
+                subtitulo="Ya casi está: solo faltan tus datos."
+                icono="bi-bag-check-fill"
+                migas={[{ to: "/shop/cart", texto: "Tu carrito" }]}
+            />
+            <Checkout></Checkout>
         </div>
     );
 };

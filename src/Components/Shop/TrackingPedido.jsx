@@ -583,16 +583,19 @@ export default function TrackingPedido() {
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-lg-6 col-md-8">
-            {/* Header */}
-            <div className="text-center mb-5">
-              <h1 className="fw-bold color-primario mb-2">Rastrea tu pedido</h1>
-              <p className="text-muted">
-                Introduce tu código de pedido para ver el estado
-              </p>
-            </div>
+            {/* Buscador (el título de la página lo pone PageHero) */}
+            <div className="bg-white rounded-4 shadow-sm p-4 mb-4 border">
+              <div className="text-center mb-3">
+                <h2 className="fw-bold color-primario mb-1 fs-5" style={{ textTransform: "none" }}>
+                  ¿Tienes tu código de pedido?
+                </h2>
+                <p className="text-muted small mb-0" style={{ lineHeight: 1.4 }}>
+                  Lo encontrarás en la confirmación de tu pedido.
+                </p>
+              </div>
 
             {/* Formulario de búsqueda */}
-            <form onSubmit={handleSubmit} className="mb-4">
+            <form onSubmit={handleSubmit}>
               <div className="d-flex gap-2">
                 <input
                   type="text"
@@ -619,6 +622,7 @@ export default function TrackingPedido() {
                 </button>
               </div>
             </form>
+            </div>
 
             {/* Error */}
             {error && (

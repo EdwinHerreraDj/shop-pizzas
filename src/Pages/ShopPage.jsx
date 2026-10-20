@@ -1,14 +1,15 @@
-import BreadCumb from "../Components/Common/BreadCumb";
+import PageHero from "../Components/Common/PageHero";
 import Shop1 from "../Components/Shop/Shop";
 
 const ShopPage = () => {
     return (
         <div>
-             <BreadCumb
-                bgimg="/assets/img/bg/breadcumb.jpg"
-                Title="Shop"
-            ></BreadCumb>  
-            <Shop1></Shop1>          
+            <PageHero
+                titulo="Nuestra carta"
+                subtitulo="Elige tu favorita o crea la tuya a tu manera."
+                icono="bi-book-half"
+            />
+            <Shop1></Shop1>
         </div>
     );
 };
