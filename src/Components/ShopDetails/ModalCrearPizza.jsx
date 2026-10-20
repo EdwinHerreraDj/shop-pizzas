@@ -49,12 +49,10 @@ export default function ModalCrearPizza({ show, onClose }) {
     [tamanos, tamanoIdActivo],
   );
 
-  /* ── Recargo por mitades ───────────────────────── */
+  /* ── Recargo por mitades (configurable desde admin → Tamaños) ── */
   const recargoMitades = useMemo(() => {
     if (!tamanoActual) return 0;
-    if (tamanoActual.nombre === "Mediana") return 1.5;
-    if (tamanoActual.nombre === "Grande") return 2;
-    return 0;
+    return toNum(tamanoActual.recargo_mitades);
   }, [tamanoActual]);
 
   /* ── Precios calculados ────────────────────────── */

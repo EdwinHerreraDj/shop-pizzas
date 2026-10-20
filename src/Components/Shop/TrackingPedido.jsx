@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import clientesAxios from "../../config/axios";
+import { iniciarPagoRedsys } from "../../utils/pagoRedsys";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Configuración de estados
@@ -408,6 +410,94 @@ function ResumenPedido({ pedido }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Banner de pago pendiente (cuando el pago con tarjeta no se completó)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BannerPagoPendiente({ pedido }) {
+  const [procesando, setProcesando] = useState(false);
+
+  // Solo se muestra si: método = tarjeta, estado_pago = pendiente|fallido,
+  // el pedido no está cancelado y tampoco está ya entregado.
+  const debeMostrar =
+    pedido.metodo_pago === "tarjeta" &&
+    ["pendiente", "fallido"].includes(pedido.estado_pago) &&
+    !["cancelado", "entregado"].includes(pedido.estado);
+
+  if (!debeMostrar) return null;
+
+  const pagar = async () => {
+    setProcesando(true);
+    try {
+      await iniciarPagoRedsys(pedido.codigo);
+    } catch (e) {
+      toast.error(
+        e?.response?.data?.message ??
+          "No se pudo iniciar el pago. Inténtalo de nuevo.",
+      );
+      setProcesando(false);
+    }
+  };
+
+  const fallido = pedido.estado_pago === "fallido";
+
+  return (
+    <div
+      className="rounded-4 p-3 mb-3 d-flex flex-column flex-sm-row align-items-sm-center gap-3"
+      style={{
+        background: fallido ? "#fee2e2" : "#fef3c7",
+        border: `1px solid ${fallido ? "#fecaca" : "#fde68a"}`,
+      }}
+    >
+      <div
+        className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+        style={{
+          width: 48,
+          height: 48,
+          background: fallido ? "#fecaca" : "#fde68a",
+          fontSize: "1.4rem",
+        }}
+      >
+        {fallido ? "✗" : "⏳"}
+      </div>
+
+      <div className="flex-grow-1">
+        <div
+          className="fw-bold small mb-1"
+          style={{ color: fallido ? "#991b1b" : "#92400e" }}
+        >
+          {fallido ? "El pago no se completó" : "Pago pendiente"}
+        </div>
+        <div className="small" style={{ color: "#555" }}>
+          {fallido
+            ? "Hubo un problema al procesar el pago con tarjeta. Puedes volver a intentarlo."
+            : "Tu pedido está reservado. Completa el pago para que empecemos a prepararlo."}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={pagar}
+        disabled={procesando}
+        className="btn rounded-pill px-4 py-2 text-white fw-semibold flex-shrink-0"
+        style={{ backgroundColor: "#eb0029", border: "none" }}
+      >
+        {procesando ? (
+          <>
+            <span className="spinner-border spinner-border-sm me-2" />
+            Conectando…
+          </>
+        ) : (
+          <>
+            <i className="bi bi-credit-card-2-back me-2" />
+            Pagar ahora
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TrackingPedido — componente principal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -591,6 +681,9 @@ export default function TrackingPedido() {
 
                 {/* Cuerpo */}
                 <div className="card-body p-4">
+                  {/* Banner de pago pendiente / fallido */}
+                  <BannerPagoPendiente pedido={pedido} />
+
                   {/* Barra de progreso */}
                   <BarraProgreso
                     estado={pedido.estado}

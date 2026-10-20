@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { iniciarPagoRedsys } from "../utils/pagoRedsys";
 
 /**
  * Página a la que Redsys redirige cuando el pago es rechazado o cancelado.
@@ -6,6 +9,22 @@ import { Link, useSearchParams } from "react-router-dom";
 export default function PagoErrorPage() {
   const [params] = useSearchParams();
   const codigo = params.get("codigo");
+  const [reintentando, setReintentando] = useState(false);
+
+  const reintentarPago = async () => {
+    if (!codigo || reintentando) return;
+    setReintentando(true);
+    try {
+      await iniciarPagoRedsys(codigo);
+      // Si llega aquí, el submit ya redirigió; no hacemos nada.
+    } catch (e) {
+      toast.error(
+        e?.response?.data?.message ??
+          "No se pudo reiniciar el pago. Inténtalo más tarde.",
+      );
+      setReintentando(false);
+    }
+  };
 
   return (
     <div className="section-padding bg-color2">
@@ -53,23 +72,44 @@ export default function PagoErrorPage() {
               />
               Tu pedido{" "}
               <strong style={{ fontFamily: "monospace" }}>{codigo}</strong>{" "}
-              sigue reservado. Si quieres reintentar el pago, contáctanos.
+              sigue reservado. Puedes volver a intentar el pago.
             </div>
           )}
 
           <div className="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+            {codigo && (
+              <button
+                type="button"
+                onClick={reintentarPago}
+                disabled={reintentando}
+                className="btn rounded-pill px-4 py-2 text-white fw-semibold"
+                style={{ backgroundColor: "#eb0029", border: "none" }}
+              >
+                {reintentando ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Conectando con el banco…
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-credit-card-2-back me-2" />
+                    Reintentar pago
+                  </>
+                )}
+              </button>
+            )}
             <Link
-              to="/shop/checkout"
-              className="btn rounded-pill px-4 py-2 text-white fw-semibold"
-              style={{ backgroundColor: "#eb0029" }}
+              to={codigo ? `/pedido/${codigo}` : "/pedido"}
+              className="btn rounded-pill px-4 py-2 fw-semibold"
+              style={{ border: "1px solid #eb0029", color: "#eb0029" }}
             >
-              <i className="bi bi-arrow-left-circle me-2" />
-              Volver al checkout
+              <i className="bi bi-geo-alt me-2" />
+              Ver estado del pedido
             </Link>
             <Link
               to="/"
-              className="btn rounded-pill px-4 py-2 fw-semibold"
-              style={{ border: "1px solid #eb0029", color: "#eb0029" }}
+              className="btn rounded-pill px-4 py-2 fw-semibold text-muted"
+              style={{ border: "1px solid #dee2e6" }}
             >
               Ir al inicio
             </Link>

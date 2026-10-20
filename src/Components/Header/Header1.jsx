@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Nav from './Nav';
 import CartDrawer from '../Shop/CartDrawer';
+import MarqueeInfo from './MarqueeInfo';
 
 export default function Header1({ variant }) {
   const [mobileToggle, setMobileToggle] = useState(false);
@@ -35,33 +36,7 @@ export default function Header1({ variant }) {
           mobileToggle ? 'cs_mobile_toggle_active' : ''
         } ${isSticky || ''}`}
       >
-        <div className="cs_top_header">
-          <div className="container">
-            <div className="cs_top_header_in">
-              <div className="cs_top_header_left header-info">
-                <ul className="cs_top_nav d-flex flex-wrap align-items-center cs_fs_12 text-white m-0 p-0">
-                  <li>
-                    <i className="bi bi-geo-alt-fill"></i>Paseo del Charcón, 13 Las Gabias (Granada)
-                  </li>
-                  <li><i className="bi bi-alarm"></i>9.00 am - 5.00 pm</li>
-                </ul>
-              </div>
-              <div className="cs_top_header_right">
-                <div className="cs_header_social_links_wrap">
-                  <div className="cs_header_social_links top-header-social-icon">
-                    Síguenos:
-                    <ul>
-                      <li><a href="#"><i className="bi bi-facebook"></i></a></li>
-                      <li><a href="#"><i className="bi bi-twitter"></i></a></li>
-                      <li><a href="#"><i className="bi bi-linkedin"></i></a></li>
-                      <li><a href="#"><i className="bi bi-instagram"></i></a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MarqueeInfo />
 
         <div className="cs_main_header">
           <div className="container">

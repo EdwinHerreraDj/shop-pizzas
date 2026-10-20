@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCarrito } from "../../context/CarritoContext";
 import clientesAxios from "../../config/axios";
+import { iniciarPagoRedsys } from "../../utils/pagoRedsys";
+import useAbiertoAhora from "../../hooks/useAbiertoAhora";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -213,16 +215,21 @@ function RadioCard({
   icon,
   label,
   sublabel,
+  disabled = false,
 }) {
   return (
     <label
       htmlFor={id}
-      className={`d-flex align-items-center gap-3 p-3 rounded-4 border cursor-pointer mb-2 ${
+      className={`d-flex align-items-center gap-3 p-3 rounded-4 border mb-2 ${
         checked
           ? "border-danger bg-danger bg-opacity-10"
           : "border-light-subtle bg-white"
       }`}
-      style={{ cursor: "pointer", transition: "all 0.2s ease" }}
+      style={{
+        cursor: disabled ? "not-allowed" : "pointer",
+        transition: "all 0.2s ease",
+        opacity: disabled ? 0.55 : 1,
+      }}
     >
       <input
         id={id}
@@ -231,6 +238,7 @@ function RadioCard({
         value={value}
         checked={checked}
         onChange={onChange}
+        disabled={disabled}
         className="form-check-input mt-0 flex-shrink-0"
         style={{ accentColor: "#eb0029" }}
       />
@@ -357,6 +365,8 @@ const Checkout = () => {
     nombre: "",
     telefono: "",
     direccion: "",
+    bloque: "",
+    piso: "",
     codigo_postal: "",
     barrio: "",
     observaciones: "",
@@ -373,6 +383,16 @@ const Checkout = () => {
   const [errorZonas, setErrorZonas] = useState(false);
   const [slots, setSlots] = useState([]);
   const [modoHora, setModoHora] = useState("asap"); // "asap" | "programar"
+  const { data: estadoApertura } = useAbiertoAhora();
+  const tiendaCerradaPorHorario =
+    estadoApertura !== undefined && estadoApertura?.abierto === false;
+
+  // Si la tienda está cerrada por horario, forzamos modo "programar"
+  useEffect(() => {
+    if (tiendaCerradaPorHorario && modoHora === "asap") {
+      setModoHora("programar");
+    }
+  }, [tiendaCerradaPorHorario, modoHora]);
   const [horaDeseada, setHoraDeseada] = useState("");
   const [metodosPago, setMetodosPago] = useState([]);
 
@@ -572,6 +592,8 @@ const Checkout = () => {
           nombre: form.nombre,
           telefono: form.telefono,
           direccion: esRecogida ? null : form.direccion,
+          bloque: esRecogida ? null : (form.bloque || null),
+          piso: esRecogida ? null : (form.piso || null),
           codigo_postal: esRecogida ? null : form.codigo_postal,
           barrio: esRecogida ? null : form.barrio,
         },
@@ -593,36 +615,9 @@ const Checkout = () => {
       // ── Pago con tarjeta → redirigir al TPV de Redsys ───────────────────
       if (form.metodo_pago === "tarjeta") {
         try {
-          const { data: redsys } = await clientesAxios.post(
-            `/shop/pedidos/${pedido.codigo}/redsys/iniciar`,
-          );
-
-          // Vaciamos el carrito antes de salir al TPV
           vaciarCarrito();
-
-          // Creamos un <form> oculto y hacemos submit hacia el TPV
-          const formEl = document.createElement("form");
-          formEl.method = "POST";
-          formEl.action = redsys.url_tpv;
-          formEl.style.display = "none";
-
-          const campos = {
-            Ds_SignatureVersion: redsys.Ds_SignatureVersion,
-            Ds_MerchantParameters: redsys.Ds_MerchantParameters,
-            Ds_Signature: redsys.Ds_Signature,
-          };
-
-          Object.entries(campos).forEach(([name, value]) => {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = name;
-            input.value = value;
-            formEl.appendChild(input);
-          });
-
-          document.body.appendChild(formEl);
-          formEl.submit();
-          return; // No continuamos; el navegador sale de la SPA hacia el TPV
+          await iniciarPagoRedsys(pedido.codigo);
+          return; // El navegador sale de la SPA hacia el TPV
         } catch (e) {
           toast.error(
             e?.response?.data?.message ??
@@ -759,8 +754,31 @@ const Checkout = () => {
                       onChange={handleChange}
                       errores={errores}
                       required
-                      placeholder="Calle, número, piso…"
+                      placeholder="Calle y número"
                     />
+
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <Campo
+                          label="Bloque / Escalera / Portal"
+                          name="bloque"
+                          value={form.bloque}
+                          onChange={handleChange}
+                          errores={errores}
+                          placeholder="Bloque B, Escalera 2…"
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <Campo
+                          label="Piso / Puerta"
+                          name="piso"
+                          value={form.piso}
+                          onChange={handleChange}
+                          errores={errores}
+                          placeholder="3º A, 1º Izq…"
+                        />
+                      </div>
+                    </div>
 
                     <div className="row g-3">
                       <div className="col-md-6">
@@ -878,18 +896,55 @@ const Checkout = () => {
                 >
                   {esRecogida ? "¿Cuándo pasas a recogerlo?" : "¿Cuándo lo quieres recibir?"}
                 </h5>
+
+                {tiendaCerradaPorHorario && (
+                  <div
+                    className="rounded-3 p-3 mb-3 d-flex align-items-start gap-2"
+                    style={{
+                      background: "#fef3c7",
+                      border: "1px solid #fde68a",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <i
+                      className="bi bi-clock-history mt-1"
+                      style={{ color: "#d97706", fontSize: "1.1rem" }}
+                    />
+                    <div>
+                      <div
+                        className="fw-bold mb-1"
+                        style={{ color: "#92400e" }}
+                      >
+                        Estamos fuera del horario de servicio
+                      </div>
+                      <div style={{ color: "#92400e" }}>
+                        {estadoApertura?.proxima_apertura
+                          ? `Abrimos hoy a las ${estadoApertura.proxima_apertura}. `
+                          : "No abrimos más por hoy. "}
+                        Programa tu pedido para una hora dentro del horario.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <RadioCard
                   id="hora_asap"
                   name="modo_hora"
                   value="asap"
                   checked={modoHora === "asap"}
                   onChange={() => {
+                    if (tiendaCerradaPorHorario) return;
                     setModoHora("asap");
                     setHoraDeseada("");
                   }}
                   icon="⚡"
                   label="Lo antes posible"
-                  sublabel="En cuanto esté listo"
+                  sublabel={
+                    tiendaCerradaPorHorario
+                      ? "No disponible fuera de horario"
+                      : "En cuanto esté listo"
+                  }
+                  disabled={tiendaCerradaPorHorario}
                 />
                 <RadioCard
                   id="hora_programar"
