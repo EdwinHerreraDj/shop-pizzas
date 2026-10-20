@@ -161,12 +161,16 @@ export default function ModalCrearPizza({ show, onClose }) {
     modo === "entera" ? !!pizzaEntera : !!pizzaMitadA && !!pizzaMitadB;
 
   /* ── Progreso: 1 tipo (siempre), 2 tamaño, 3 pizza lista ── */
-  const pasosHechos = [true, !!tamanoIdActivo, puedeAnadir];
+  const pasos = [
+    { nombre: "Tipo", hecho: true },
+    { nombre: "Tamaño", hecho: !!tamanoIdActivo },
+    { nombre: modo === "mitades" ? "Mitades" : "Ingredientes", hecho: puedeAnadir },
+  ];
   const textoProgreso = puedeAnadir
     ? "¡Lista para el horno!"
     : modo === "mitades"
-      ? "Elige tus dos sabores"
-      : "Dale tu toque";
+      ? "Elige tus dos sabores y listo."
+      : "Tres pasos y a disfrutar.";
 
   /* ── Render ────────────────────────────────────── */
   return (
@@ -183,19 +187,18 @@ export default function ModalCrearPizza({ show, onClose }) {
           <i className="bi bi-x-lg" />
         </button>
         <h2>¡Vamos a crear tu pizza!</h2>
-        <p>Tres pasos y a disfrutar.</p>
+        <p>{textoProgreso}</p>
 
-        <div className="cp-progreso" aria-label="Progreso">
-          {pasosHechos.map((hecho, i) => (
-            <span key={i} className="d-inline-flex align-items-center gap-1">
-              {i > 0 && <span className={`cp-progreso-linea ${hecho ? "hecho" : ""}`} />}
-              <span className={`cp-progreso-punto ${hecho ? "hecho" : ""}`}>
-                {hecho ? <i className="bi bi-check-lg" /> : i + 1}
+        <ol className="cp-pasos" aria-label="Progreso">
+          {pasos.map((paso, i) => (
+            <li key={paso.nombre} className={`cp-paso ${paso.hecho ? "hecho" : ""}`}>
+              <span className="cp-paso-marca">
+                {paso.hecho ? <i className="bi bi-check-lg" /> : i + 1}
               </span>
-            </span>
+              {paso.nombre}
+            </li>
           ))}
-          <span className="cp-progreso-texto">{textoProgreso}</span>
-        </div>
+        </ol>
       </div>
 
       <Modal.Body className="cp-cuerpo">
@@ -273,10 +276,8 @@ export default function ModalCrearPizza({ show, onClose }) {
                         total={tamanos.length}
                         activo={activo}
                       />
-                      <span className="cp-tamano-nombre">
-                        {activo && <i className="bi bi-check-circle-fill me-1" style={{ color: "#eb0029" }} />}
-                        {t.nombre}
-                      </span>
+                      {activo && <i className="bi bi-check-circle-fill cp-tamano-check" />}
+                      <span className="cp-tamano-nombre">{t.nombre}</span>
                       {modo === "entera" && (
                         <span className="cp-tamano-precio">{formatEUR(toNum(t.precio))}</span>
                       )}
@@ -336,7 +337,8 @@ export default function ModalCrearPizza({ show, onClose }) {
             onClick={handleAnadir}
           >
             <i className="bi bi-bag-plus-fill" />
-            <span>Añadir a mi pedido</span>
+            <span className="d-none d-sm-inline">Añadir a mi pedido</span>
+            <span className="d-sm-none">Añadir</span>
             <span className="cp-anadir-precio">{formatEUR(precioFinal)}</span>
           </button>
         </div>

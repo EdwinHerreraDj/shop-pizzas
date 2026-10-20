@@ -25,6 +25,7 @@
   color: #fff;
 }
 .cp-cabecera h2 {
+  padding-right: 2.75rem;
   color: #fff;
   font-size: 1.6rem;
   margin: 0;
@@ -49,30 +50,40 @@
 }
 .cp-cerrar:hover { background: rgba(255, 255, 255, 0.35); }
 
-/* Progreso de 3 pasos */
-.cp-progreso { display: flex; align-items: center; gap: 0.4rem; margin-top: 1rem; }
-.cp-progreso-punto {
-  width: 26px;
-  height: 26px;
+/* Progreso: pastillas con nombre de cada paso */
+.cp-pasos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+.cp-paso {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.3rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.cp-paso-marca {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
-  transition: all 0.3s ease;
-}
-.cp-progreso-punto.hecho { background: #fff; color: var(--cp-rojo); }
-.cp-progreso-linea {
-  flex: 0 0 34px;
-  height: 3px;
-  border-radius: 3px;
   background: rgba(255, 255, 255, 0.3);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
-.cp-progreso-linea.hecho { background: #fff; }
-.cp-progreso-texto { margin-left: 0.5rem; font-size: 0.85rem; opacity: 0.95; }
+.cp-paso.hecho { background: #fff; color: var(--cp-rojo); }
+.cp-paso.hecho .cp-paso-marca { background: var(--cp-rojo); color: #fff; }
 
 .cp-cuerpo { padding: 1.25rem; }
 @media (min-width: 576px) { .cp-cuerpo { padding: 1.5rem 1.75rem; } }
@@ -343,3 +354,36 @@
 .cp-modal h6 {
   text-transform: none;
 }
+
+/* Textos: interlineado propio (el de la plantilla es muy alto para textos cortos) */
+.cp-cabecera p,
+.cp-seccion-sub,
+.cp-opcion-sub,
+.cp-ayuda,
+.cp-nota,
+.cp-ing-precio {
+  line-height: 1.4;
+}
+.cp-anadir { white-space: nowrap; }
+
+@media (max-width: 575px) {
+  .cp-cabecera { padding: 1.25rem 1.25rem 1rem; }
+  .cp-cabecera h2 { font-size: 1.35rem; }
+  .cp-cabecera p { font-size: 0.9rem; }
+  .cp-seccion-titulo { font-size: 1.05rem; }
+  .cp-seccion-icono { width: 40px; height: 40px; font-size: 1.1rem; }
+  .cp-ahora-no { padding: 0.75rem 0.5rem; font-size: 0.9rem; }
+  .cp-anadir { padding: 0.8rem 1rem; font-size: 0.98rem; }
+}
+
+/* Marca del tamaño elegido en la esquina (no empuja el nombre a otra línea) */
+.cp-tamano { position: relative; }
+.cp-tamano-check {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.55rem;
+  color: var(--cp-rojo);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.cp-tamano-nombre { white-space: nowrap; }
