@@ -755,3 +755,26 @@
   .carta-btn.secundario { flex: 0 0 42px; padding: 0.6rem 0; }
   .carta-btn.secundario span { display: none; }
 }
+
+/* Carga de la foto del producto: hueco reservado + brillo hasta que llega */
+.carta-card-imagen img { height: auto; opacity: 0; transform: scale(0.96); transition: opacity 0.35s ease, transform 0.4s ease; }
+.carta-card-imagen.cargada img { opacity: 1; transform: none; }
+.carta-card-imagen::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -45%);
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f6e6d6 25%, #fff3e6 50%, #f6e6d6 75%);
+  background-size: 200% 100%;
+  animation: carta-brillo 1.2s ease-in-out infinite;
+  transition: opacity 0.3s ease;
+}
+.carta-card-imagen.cargada::before { opacity: 0; animation: none; }
+.carta-card:hover .carta-card-imagen.cargada img { transform: rotate(-8deg) scale(1.04); }
+@media (prefers-reduced-motion: reduce) {
+  .carta-card-imagen img, .carta-card-imagen::before { transition: none; animation: none; }
+}

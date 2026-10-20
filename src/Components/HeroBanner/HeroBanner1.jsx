@@ -19,13 +19,13 @@ const settings = {
 
 const heroContent = [
     {
-        img: '/assets/img/banner/bannerThumb1_1.png',
+        img: '/assets/img/banner/bannerThumb1_1.webp',
         subtitle: 'pizzería casa de campo',
         title: 'Pizzas artesanas únicas',
         btnname: 'Haz tu pedido'
     },
     {
-        img: '/assets/img/banner/bannerThumb1_3.png',
+        img: '/assets/img/banner/bannerThumb1_3.webp',
         subtitle: 'pizzería casa de campo',
         title: 'Tu pizza caliente en minutos',
         btnname: 'Haz tu pedido'
@@ -134,12 +134,12 @@ const HeroBanner1 = () => {
                             {heroContent.map((item, i) => (
                                 <div key={i} className="swiper-slide">
                                     <div className="banner-wrapper style1 bg-img">
-                                        <div className="shape1_1 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_1.svg" alt="" /></div>
-                                        <div className="shape1_2 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_2.svg" alt="" /></div>
-                                        <div className="shape1_3 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_3.svg" alt="" /></div>
-                                        <div className="shape1_4 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_4.svg" alt="" /></div>
-                                        <div className="shape1_5 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_5.svg" alt="" /></div>
-                                        <div className="shape1_6 d-none d-xxl-block cir36"><img src="/assets/img/shape/bannerShape1_6.svg" alt="" /></div>
+                                        <div className="shape1_1 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_1.svg" alt="" loading="lazy" /></div>
+                                        <div className="shape1_2 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_2.svg" alt="" loading="lazy" /></div>
+                                        <div className="shape1_3 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_3.svg" alt="" loading="lazy" /></div>
+                                        <div className="shape1_4 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_4.svg" alt="" loading="lazy" /></div>
+                                        <div className="shape1_5 d-none d-xxl-block"><img src="/assets/img/shape/bannerShape1_5.svg" alt="" loading="lazy" /></div>
+                                        <div className="shape1_6 d-none d-xxl-block cir36"><img src="/assets/img/shape/bannerShape1_6.svg" alt="" loading="lazy" /></div>
                                         <div className="overlay"></div>
                                         <div className="banner-container">
                                             <div className="container">

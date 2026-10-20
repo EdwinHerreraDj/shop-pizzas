@@ -64,10 +64,10 @@ const Footer1 = () => {
         <footer className="footer-section bg-title fix">
             <div className="footer-widgets-wrapper">
                 <div className="shape1 float-bob-y d-none d-xxl-block"><img src="/assets/img/shape/footerShape1_1.png"
-                    alt="" /></div>
-                <div className="shape2 d-none d-xxl-block"><img src="/assets/img/shape/footerShape1_2.png" alt="" /></div>
-                <div className="shape3 d-none d-xxl-block"><img src="/assets/img/shape/footerShape1_3.png" alt="" /></div>
-                <div className="shape4  d-none d-xxl-block"><img src="/assets/img/shape/footerShape1_4.png" alt="" /></div>
+                    alt="" loading="lazy" /></div>
+                <div className="shape2 d-none d-xxl-block"><img src="/assets/img/shape/footerShape1_2.webp" alt="" loading="lazy" /></div>
+                <div className="shape3 d-none d-xxl-block"><img src="/assets/img/shape/footerShape1_3.webp" alt="" loading="lazy" /></div>
+                <div className="shape4  d-none d-xxl-block"><img src="/assets/img/shape/footerShape1_4.png" alt="" loading="lazy" /></div>
                 <div className="container">
                     {/* Contacto: solo los datos configurados en el panel */}
                     {(direccionCompleta || empresa?.email || empresa?.telefono || whatsapp) && (

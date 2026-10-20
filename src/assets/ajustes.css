@@ -42,3 +42,25 @@ a.text-white:focus-visible {
 .cs_nav .cs_nav_list a:focus-visible {
   color: #fc791a !important;
 }
+
+/* ── Cabecera fija (Header1) ───────────────────────────
+   Siempre con fondo oscuro y se oculta deslizándose (sin pasar por
+   transparente), así en iPhone nunca asoma la página blanca de debajo. */
+.cs_site_header.header_sticky_style1 {
+  background-color: #111111;
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+.cs_site_header.header_sticky_style1.cabecera-oculta {
+  transform: translateY(-100%);
+}
+
+/* ── Fondo del hero en WebP (antes JPG de 1 MB) ──────── */
+.banner-wrapper.style1 {
+  background-image: url(/assets/img/bg/hero-paginas.webp);
+}
+@media (max-width: 767px) {
+  .banner-wrapper.style1 {
+    background-image: url(/assets/img/bg/hero-paginas-movil.webp);
+  }
+}

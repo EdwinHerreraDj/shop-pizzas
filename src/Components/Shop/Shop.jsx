@@ -146,10 +146,11 @@ const Shop1 = () => {
                         </div>
                       </div>
                     ) : (
-                      articulos.map((producto) => (
+                      articulos.map((producto, i) => (
                         <ShopCard
                           key={producto.id}
                           producto={producto}
+                          prioritaria={i < 4}
                           onAgregar={handleAgregar}
                           onPersonalizar={handlePersonalizar}
                         />

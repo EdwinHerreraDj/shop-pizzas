@@ -6,8 +6,7 @@ import CarritoBoton from './CarritoBoton';
 
 export default function Header1({ variant }) {
   const [mobileToggle, setMobileToggle] = useState(false);
-  const [isSticky, setIsSticky] = useState();
-  const [prevScrollPos, setPrevScrollPos] = useState(0);
+  const [oculta, setOculta] = useState(false);
 
   // El header es fixed: el espaciador debe medir lo mismo que él. La altura
   // cambia si el marquee no tiene cards (desaparece) o según el ancho de pantalla,
@@ -24,21 +23,45 @@ export default function Header1({ variant }) {
   }, []);
 
 
+  // Ocultar al bajar y mostrar al subir.
+  // - Ignora el "rebote" de Safari en iPhone (scrollY negativo o más allá del
+  //   final): antes ocultaba la cabecera un instante y se veía la página blanca.
+  // - Umbral de unos píxeles para no parpadear con movimientos mínimos.
+  // - Solo cambia el estado cuando de verdad pasa de visible a oculta.
+  const ultimaPos = useRef(0);
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollPos = window.scrollY;
-      if (currentScrollPos > prevScrollPos) {
-        setIsSticky('cs-gescout_sticky');
-      } else if (currentScrollPos !== 0) {
-        setIsSticky('cs-gescout_show cs-gescout_sticky'); 
+    const UMBRAL = 8;
+    let pendiente = false;
+
+    const evaluar = () => {
+      pendiente = false;
+      const maximo = document.documentElement.scrollHeight - window.innerHeight;
+      const y = Math.min(Math.max(window.scrollY, 0), Math.max(maximo, 0));
+      const alto = headerRef.current?.offsetHeight ?? 120;
+      const delta = y - ultimaPos.current;
+
+      if (y <= alto) {
+        setOculta(false);
+      } else if (delta > UMBRAL) {
+        setOculta(true);
+      } else if (delta < -UMBRAL) {
+        setOculta(false);
       } else {
-        setIsSticky();
+        return; // movimiento mínimo: no actualizar la referencia
       }
-      setPrevScrollPos(currentScrollPos);
+      ultimaPos.current = y;
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [prevScrollPos]);
+
+    const onScroll = () => {
+      if (!pendiente) {
+        pendiente = true;
+        requestAnimationFrame(evaluar);
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <>
@@ -48,7 +71,7 @@ export default function Header1({ variant }) {
           variant || ''
         } cs_sticky_header cs_site_header_full_width ${
           mobileToggle ? 'cs_mobile_toggle_active' : ''
-        } ${isSticky || ''}`}
+        } ${oculta && !mobileToggle ? 'cabecera-oculta' : ''}`}
       >
         <MarqueeInfo />
 

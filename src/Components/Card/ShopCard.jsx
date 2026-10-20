@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 const formatEUR = (value) =>
   typeof value === "number"
     ? new Intl.NumberFormat("es-ES", {
@@ -24,9 +26,11 @@ const textoNatural = (texto = "") => {
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
 };
 
-export default function ShopCard({ producto, onPersonalizar, onAgregar }) {
+export default function ShopCard({ producto, onPersonalizar, onAgregar, prioritaria = false }) {
   const DEFAULT_IMG = "/assets/img/food-items/item1_4.png";
-  const imgSrc = producto?.imagen || DEFAULT_IMG;
+  // Miniatura WebP ligera (≈30 KB) si el backend la tiene; si no, la original
+  const imgSrc = producto?.imagen_miniatura || producto?.imagen || DEFAULT_IMG;
+  const [cargada, setCargada] = useState(false);
 
   const tamanos = producto?.tamanos || [];
   const price = getPrecioMinimo(tamanos);
@@ -35,15 +39,24 @@ export default function ShopCard({ producto, onPersonalizar, onAgregar }) {
 
   return (
     <article className="carta-card">
-      <div className="carta-card-imagen">
+      <div className={`carta-card-imagen ${cargada ? "cargada" : ""}`}>
         <img
           src={imgSrc}
           alt={producto?.nombre || "Producto"}
-          loading="lazy"
+          width="400"
+          height="400"
+          loading={prioritaria ? "eager" : "lazy"}
+          fetchPriority={prioritaria ? "high" : "auto"}
           decoding="async"
+          onLoad={() => setCargada(true)}
+          ref={(img) => {
+            // Si ya estaba en caché, onLoad puede llegar antes de hidratar
+            if (img?.complete && img.naturalWidth > 0 && !cargada) setCargada(true);
+          }}
           onError={(e) => {
             e.currentTarget.onerror = null;
             e.currentTarget.src = DEFAULT_IMG;
+            setCargada(true);
           }}
         />
         {tieneVariosTamanos && (
