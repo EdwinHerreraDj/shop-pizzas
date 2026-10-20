@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Nav from './Nav';
 import CartDrawer from '../Shop/CartDrawer';
@@ -9,7 +9,20 @@ export default function Header1({ variant }) {
   const [isSticky, setIsSticky] = useState();
   const [prevScrollPos, setPrevScrollPos] = useState(0);
 
-  
+  // El header es fixed: el espaciador debe medir lo mismo que él. La altura
+  // cambia si el marquee no tiene cards (desaparece) o según el ancho de pantalla,
+  // así que la medimos en vez de usar la altura fija del CSS (136px).
+  const headerRef = useRef(null);
+  const [alturaHeader, setAlturaHeader] = useState(null);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => setAlturaHeader(header.offsetHeight));
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +43,7 @@ export default function Header1({ variant }) {
   return (
     <>
       <header
+        ref={headerRef}
         className={`cs_site_header header_style_2 cs_style_1 header_sticky_style1 ${
           variant || ''
         } cs_sticky_header cs_site_header_full_width ${
@@ -81,7 +95,10 @@ export default function Header1({ variant }) {
         </div>
       </header>
 
-      <div className="cs_site_header_spacing_130"></div>
+      <div
+        className="cs_site_header_spacing_130"
+        style={alturaHeader ? { height: alturaHeader } : undefined}
+      ></div>
 
       
     </>
