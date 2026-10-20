@@ -217,9 +217,11 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
 
   return (
     <div>
-      <hr />
-
       {/* ── LISTADO DE PIZZAS ── */}
+      <h6 className="fw-semibold mb-2">
+        <i className="bi bi-list-ul me-1 color-secundario" />
+        Elige una pizza
+      </h6>
       <div className="d-flex flex-wrap gap-2">
         {pizzas.map((pizza) => {
           const active = pizzaSeleccionada?.id === pizza.id;
@@ -245,17 +247,8 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
                   : "border-secondary-subtle bg-white text-dark"
               }`}
             >
+              {active && <i className="bi bi-check-circle-fill" />}
               <span className="text-nowrap">{pizza.nombre}</span>
-              <span
-                className={`d-flex align-items-center justify-content-center rounded-circle ${
-                  active
-                    ? "bg-danger text-white"
-                    : "border border-secondary text-transparent"
-                }`}
-                style={{ width: 18, height: 18, fontSize: 11 }}
-              >
-                ✓
-              </span>
             </button>
           );
         })}
@@ -290,12 +283,14 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
 
       {/* ── Contenido cuando hay pizza seleccionada ── */}
       {pizzaSeleccionada && detalle && !loadingDetalle && (
-        <>
-          <hr />
-
+        <div className="mt-3 pt-3 border-top">
           {/* ── Ingredientes base ── */}
-          <div className="mb-4">
-            <h6 className="fw-semibold mb-2">Ingredientes base</h6>
+          <div className="mitad-bloque mb-3">
+            <h6 className="fw-semibold mb-1">
+              <i className="bi bi-basket me-1 color-secundario" />
+              Lleva
+            </h6>
+            <p className="small text-muted mb-2">Toca un ingrediente para quitarlo.</p>
 
             {ingredientes.filter((i) => i.incluido).length === 0 ? (
               <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted">
@@ -344,11 +339,12 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
 
           {/* ── Ingredientes quitados ── */}
           {baseQuitados.length > 0 && (
-            <div className="mb-4">
-              <h6 className="fw-semibold mb-2 text-muted">
+            <div className="mitad-bloque mb-3">
+              <h6 className="fw-semibold mb-1 text-muted">
                 <i className="bi bi-dash-circle me-1" />
-                Ingredientes quitados
+                Quitados
               </h6>
+              <p className="small text-muted mb-2">Toca para volver a ponerlo.</p>
 
               <div className="d-flex flex-wrap gap-2">
                 {baseQuitados.map((ing) => (
@@ -374,9 +370,11 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
 
           {/* ── Extras añadidos (resumen) ── */}
           {extrasAnadidos.length > 0 && (
-            <div className="mb-4">
-              <hr />
-              <h6 className="fw-semibold mb-2">Ingredientes añadidos:</h6>
+            <div className="mitad-bloque mb-3">
+              <h6 className="fw-semibold mb-2">
+                <i className="bi bi-plus-circle me-1 text-success" />
+                Extras añadidos
+              </h6>
 
               <div className="d-flex flex-wrap gap-2">
                 {extrasAnadidos.map((ing) => {
@@ -410,10 +408,12 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
             </div>
           )}
 
-          <hr />
-
           {/* ── Selector por categorías (Tabs) ── */}
-          <h6 className="fw-semibold mb-3">Agregar ingredientes</h6>
+          <h6 className="fw-semibold mb-1">
+            <i className="bi bi-plus-square me-1 color-secundario" />
+            Añadir ingredientes
+          </h6>
+          <p className="small text-muted mb-2">Elige una categoría y usa + / −.</p>
 
           <Tabs
             defaultActiveKey={Object.keys(detalle.ingredientes)[0]}
@@ -491,14 +491,13 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
               </Tab>
             ))}
           </Tabs>
-        </>
+        </div>
       )}
 
       {/* Mensaje si no hay pizza seleccionada */}
       {!pizzaSeleccionada && (
         <>
-          <hr />
-          <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted text-center">
+          <div className="mt-3 alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted text-center">
             <i className="bi bi-hand-index me-1" />
             Selecciona una pizza para ver y modificar sus ingredientes.
           </div>

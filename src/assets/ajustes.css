@@ -22,9 +22,19 @@ a.text-white:focus-visible {
   border-radius: 999px;
 }
 
-/* El icono de .theme-btn lleva un recuadro blanco: lo hacemos circular a juego */
-.theme-btn i {
+/* El icono de .theme-btn lleva un fondo blanco con padding: sin medidas fijas
+   salía ovalado. Tamaño cuadrado + centrado = círculo perfecto.
+   (style4/style6 llevan el icono sin fondo, no les afecta) */
+.theme-btn:not(.style4):not(.style6) i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  padding: 0;
   border-radius: 50%;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 /* Menú principal (fondo negro): hover en naranja, legible */

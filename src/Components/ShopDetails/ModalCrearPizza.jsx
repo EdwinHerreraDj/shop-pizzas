@@ -183,9 +183,7 @@ export default function ModalCrearPizza({ show, onClose }) {
           <>
             {/* ── MODO ───────────────────────── */}
             <div className="mb-4">
-              <h6 className="fw-bold text-uppercase color-primario mb-3">
-                Tipo de pizza
-              </h6>
+              <Paso numero={1} titulo="Tipo de pizza" />
 
               <div className="row g-3">
                 <div className="col-6">
@@ -269,43 +267,48 @@ export default function ModalCrearPizza({ show, onClose }) {
               </div>
             </div>
 
-            <hr />
-
             {/* ── TAMAÑO ─────────────────────── */}
             <div className="mb-4">
-              <label className="fw-semibold mb-2 d-block color-primario">
-                Tamaño
-              </label>
+              <Paso numero={2} titulo="Tamaño" />
 
               <div className="d-flex flex-wrap gap-2">
-                {tamanosDisponibles.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className={`theme-btn style6 flex-fill flex-sm-grow-0 ${
-                      tamanoIdActivo === t.id
-                        ? "btn-primary text-red-50"
-                        : "btn-outline-primary bg-white"
-                    }`}
-                    style={{ minWidth: "120px" }}
-                    onClick={() => handleCambiarTamano(t.id)}
-                  >
-                    {t.nombre}
-                    {modo === "entera" && (
-                      <small className="ms-1 opacity-75 d-block d-sm-inline">
-                        ({formatEUR(t.precio)})
-                      </small>
-                    )}
-                  </button>
-                ))}
+                {tamanosDisponibles.map((t) => {
+                  const activo = tamanoIdActivo === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      aria-pressed={activo}
+                      className="crear-pizza-tamano flex-fill flex-sm-grow-0"
+                      data-activo={activo}
+                      onClick={() => handleCambiarTamano(t.id)}
+                    >
+                      {activo && <i className="bi bi-check-circle-fill me-1" />}
+                      {t.nombre}
+                      {modo === "entera" && (
+                        <small className="ms-1 opacity-75">
+                          ({formatEUR(t.precio)})
+                        </small>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+              {modo === "mitades" && (
+                <p className="small text-muted mt-2 mb-0">
+                  <i className="bi bi-info-circle me-1" />
+                  Las pizzas por mitades están disponibles a partir del tamaño mediano.
+                </p>
+              )}
             </div>
-
-            <hr />
 
             {/* ── BUILDER ────────────────────── */}
             {tamanoIdActivo && (
               <>
+                <Paso
+                  numero={3}
+                  titulo={modo === "entera" ? "Elige los ingredientes" : "Elige las dos mitades"}
+                />
                 {modo === "entera" ? (
                   <PizzaEnteraBuilder
                     tamanoId={tamanoIdActivo}
@@ -325,6 +328,14 @@ export default function ModalCrearPizza({ show, onClose }) {
       </Modal.Body>
 
       <Modal.Footer className="border-top-0 px-4 pb-4 pt-2">
+        {modo === "mitades" && plantilla && (
+          <div className="crear-pizza-desglose w-100 small text-muted">
+            <i className="bi bi-info-circle me-1" />
+            Se cobra la mitad más cara
+            {recargoMitades > 0 && ` + ${formatEUR(recargoMitades)} por pizza a mitades`}.
+            {!puedeAnadir && " Elige las dos mitades para ver el total."}
+          </div>
+        )}
         <div className="d-flex w-100 gap-3">
           {/* CANCELAR */}
           <Button
@@ -357,6 +368,49 @@ export default function ModalCrearPizza({ show, onClose }) {
           </Button>
         </div>
       </Modal.Footer>
+      <style>{`
+        .crear-pizza-tamano {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 120px;
+          padding: 0.6rem 1.2rem;
+          border-radius: 999px;
+          border: 1px solid #dee2e6;
+          background: #fff;
+          color: #495057;
+          font-weight: 600;
+          transition: all 0.2s ease;
+        }
+        .crear-pizza-tamano:hover { border-color: #eb0029; color: #eb0029; }
+        .crear-pizza-tamano[data-activo="true"] {
+          background: #eb0029;
+          border-color: #eb0029;
+          color: #fff;
+          box-shadow: 0 6px 18px rgba(235, 0, 41, 0.25);
+        }
+        .crear-pizza-desglose {
+          background: #f8f9fa;
+          border-radius: 14px;
+          padding: 0.75rem 1rem;
+          margin-bottom: 0.5rem;
+        }
+      `}</style>
     </Modal>
+  );
+}
+
+/* ── Encabezado de paso numerado ─────────────────── */
+function Paso({ numero, titulo }) {
+  return (
+    <div className="d-flex align-items-center gap-2 mb-3">
+      <span
+        className="d-inline-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0"
+        style={{ width: 28, height: 28, backgroundColor: "#eb0029", fontSize: "0.85rem" }}
+      >
+        {numero}
+      </span>
+      <h6 className="fw-bold mb-0 color-primario">{titulo}</h6>
+    </div>
   );
 }
