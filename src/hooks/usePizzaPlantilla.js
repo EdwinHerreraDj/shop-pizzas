@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import clientesAxios from "../config/axios.js";
+import clientesAxios, { reintentarSalvoCierre } from "../config/axios.js";
 
 /**
  * Hook exclusivo para la pizza plantilla (es_plantilla = 1).
@@ -17,6 +17,6 @@ export default function usePizzaPlantilla() {
     },
     staleTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: reintentarSalvoCierre(1),
   });
 }

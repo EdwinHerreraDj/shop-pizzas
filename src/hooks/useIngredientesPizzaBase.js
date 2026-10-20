@@ -1,6 +1,6 @@
 // src/hooks/useIngredientesPizzaBase.js
 import { useQuery } from "@tanstack/react-query";
-import clientesAxios from "../config/axios";
+import clientesAxios, { reintentarSalvoCierre } from "../config/axios";
 
 export default function useIngredientesPizzaBase() {
   return useQuery({
@@ -10,6 +10,6 @@ export default function useIngredientesPizzaBase() {
       return data;
     },
     staleTime: 1000 * 60 * 5,
-    retry: 1,
+    retry: reintentarSalvoCierre(1),
   });
 }

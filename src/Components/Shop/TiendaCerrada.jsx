@@ -22,9 +22,10 @@ export default function TiendaCerrada({ titulo, mensaje }) {
               height: 110,
               background: "linear-gradient(135deg, #eb0029, #fc791a)",
               fontSize: "3rem",
+              color: "#fff",
             }}
           >
-            🔒
+            <i className="bi bi-lock-fill" />
           </div>
 
           {/* Título */}

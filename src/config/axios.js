@@ -16,21 +16,46 @@ export function setQueryClient(client) {
     queryClientRef = client;
 }
 
-// Interceptor: si el backend responde 503 con tienda_cerrada, refrescamos
+/**
+ * ¿El error es el 503 de "tienda cerrada / mantenimiento" del backend?
+ * Lo distingue de un error real (red caída, 500, límite de peticiones...).
+ */
+export function esTiendaCerrada(error) {
+    return error?.response?.status === 503 && error?.response?.data?.tienda_cerrada === true;
+}
+
+/** Título y mensaje de cierre que envía Laravel junto al 503. */
+export function datosCierre(error) {
+    const data = error?.response?.data ?? {};
+    return {
+        cerrada: true,
+        titulo: data.titulo ?? "¡Estamos cerrados!",
+        mensaje: data.mensaje ?? "Volveremos pronto.",
+    };
+}
+
+/**
+ * Política de reintentos para React Query: nunca reintenta un cierre por
+ * mantenimiento ni errores 4xx (no se van a arreglar solos); los fallos de
+ * red y 5xx reales se reintentan hasta `maxIntentos` veces.
+ */
+export function reintentarSalvoCierre(maxIntentos = 3) {
+    return (intentos, error) => {
+        if (esTiendaCerrada(error)) return false;
+        const status = error?.response?.status;
+        if (status >= 400 && status < 500) return false;
+        return intentos < maxIntentos;
+    };
+}
+
+// Interceptor: si el backend responde 503 con tienda_cerrada, actualizamos
 // el estado de la tienda para que TiendaGuard muestre la pantalla de cerrada
 // inmediatamente, en lugar de un mensaje de error.
 clientesAxios.interceptors.response.use(
     (response) => response,
     (error) => {
-        const data = error?.response?.data;
-        if (error?.response?.status === 503 && data?.tienda_cerrada) {
-            if (queryClientRef) {
-                queryClientRef.setQueryData(["estado-tienda"], {
-                    cerrada: true,
-                    titulo: data.titulo ?? "¡Estamos cerrados!",
-                    mensaje: data.mensaje ?? "Volveremos pronto.",
-                });
-            }
+        if (esTiendaCerrada(error) && queryClientRef) {
+            queryClientRef.setQueryData(["estado-tienda"], datosCierre(error));
         }
         return Promise.reject(error);
     },

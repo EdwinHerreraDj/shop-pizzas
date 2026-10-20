@@ -14,7 +14,7 @@ export default function useShop() {
   const [mostrarModalCrearPizza, setMostrarModalCrearPizza] = useState(false);
 
   // Hooks externos
-  const { data, isLoading, isError } = useArticulos(categoria, page);
+  const { data, isLoading, isError, error, refetch } = useArticulos(categoria, page);
   const { agregarAlCarrito } = useCarrito();
 
   // Datos
@@ -116,6 +116,8 @@ export default function useShop() {
     lastPage,
     isLoading,
     isError,
+    error,
+    refetch,
     handleCategoriaChange,
     handleAgregar,
     handlePersonalizar,

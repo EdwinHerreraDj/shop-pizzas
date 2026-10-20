@@ -8,9 +8,16 @@ import TiendaCerrada from "./TiendaCerrada";
  * con 503 y provocarían un mensaje de error genérico.
  */
 export default function TiendaGuard({ children }) {
-  const { data, isLoading, isError } = useEstadoTienda();
+  const { data, isLoading } = useEstadoTienda();
 
-  // Primera carga: spinner centrado hasta saber el estado real
+  // 1) Cerrada según el último estado conocido. Va antes que cualquier
+  //    comprobación de error: si un refresco posterior falla (red, límite de
+  //    peticiones...) React Query conserva el dato y la tienda sigue cerrada.
+  if (data?.cerrada) {
+    return <TiendaCerrada titulo={data.titulo} mensaje={data.mensaje} />;
+  }
+
+  // 2) Primera carga: spinner centrado hasta saber el estado real
   if (isLoading) {
     return (
       <div
@@ -29,13 +36,9 @@ export default function TiendaGuard({ children }) {
     );
   }
 
-  // Si falla la consulta del estado, asumimos que está abierta (no queremos
-  // bloquear la tienda por un fallo de red puntual)
-  if (isError || !data) return children;
-
-  if (data.cerrada) {
-    return <TiendaCerrada titulo={data.titulo} mensaje={data.mensaje} />;
-  }
-
+  // 3) Abierta, o no se pudo saber el estado: dejamos pasar para no bloquear
+  //    la tienda por un fallo de red puntual. Si en realidad está cerrada, el
+  //    primer 503 de la API lo detecta el interceptor de axios y este guard
+  //    pasa a mostrar la pantalla de cerrada.
   return children;
 }

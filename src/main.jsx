@@ -6,7 +6,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { router } from "./Routes/Routes.jsx";
 import { CarritoProvider } from "./context/CarritoContext.jsx";
 import { ToastContainer } from "react-toastify";
-import { setQueryClient } from "./config/axios.js";
+import { setQueryClient, reintentarSalvoCierre } from "./config/axios.js";
 import "react-toastify/dist/ReactToastify.css";
 
 // 🔹 Estilos globales
@@ -15,8 +15,13 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./assets/main.css";
 
-// Crear instancia de React Query
-const queryClient = new QueryClient();
+// Crear instancia de React Query.
+// Un 503 de tienda cerrada no se reintenta: se muestra el mantenimiento al momento.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: reintentarSalvoCierre(3) },
+  },
+});
 
 // Permite al interceptor de axios actualizar la caché del query client
 // cuando el backend responde 503 (tienda cerrada).

@@ -7,6 +7,7 @@ import Pagination from "./Pagination";
 import ModalCrearPizza from "../ShopDetails/ModalCrearPizza";
 import ModalPersonalizar from "../ShopDetails/ModalPersonalizar";
 import CarritoSidebar from "../Carrito/CarritoSidebar";
+import ErrorCarga from "./ErrorCarga";
 
 const Shop1 = () => {
   const {
@@ -16,6 +17,8 @@ const Shop1 = () => {
     lastPage,
     isLoading,
     isError,
+    error,
+    refetch,
     handleCategoriaChange,
     handleAgregar,
     handlePersonalizar,
@@ -170,20 +173,12 @@ const Shop1 = () => {
                         </p>
                       </div>
                     ) : isError ? (
-                      <div className="col-12 d-flex justify-content-center align-items-center text-center py-5 my-4">
-                        <div
-                          className="alert alert-danger d-flex flex-column flex-sm-row align-items-center justify-content-center gap-2 shadow-sm px-4 py-3"
-                          role="alert"
-                          style={{ maxWidth: "600px" }}
-                        >
-                          <i className="bi bi-exclamation-triangle-fill fs-4"></i>
-                          <span className="fw-medium">
-                            Ocurrió un error al cargar los productos.
-                            <span className="text-muted">
-                              {" "}
-                              Por favor, inténtalo más tarde.
-                            </span>
-                          </span>
+                      <div
+                        className="col-12 d-flex justify-content-center align-items-center py-5 my-4"
+                        style={{ gridColumn: "1 / -1" }}
+                      >
+                        <div className="shadow-sm" style={{ width: "100%", maxWidth: "640px" }}>
+                          <ErrorCarga error={error} onReintentar={refetch} que="los productos" />
                         </div>
                       </div>
                     ) : articulos.length === 0 ? (

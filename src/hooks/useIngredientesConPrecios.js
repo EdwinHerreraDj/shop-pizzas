@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import clientesAxios from "../config/axios";
+import clientesAxios, { reintentarSalvoCierre } from "../config/axios";
 
 export default function useIngredientesConPrecios(id) {
   const queryClient = useQueryClient();
@@ -25,7 +25,7 @@ export default function useIngredientesConPrecios(id) {
     // Evita refetch si ya existe en cache
     refetchOnMount: false,
 
-    retry: 1,
+    retry: reintentarSalvoCierre(1),
   });
 
   // Helper opcional para prefetch (mitades)

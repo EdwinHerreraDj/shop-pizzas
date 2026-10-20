@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCarrito } from "../../context/CarritoContext";
-import clientesAxios from "../../config/axios";
+import clientesAxios, { esTiendaCerrada, datosCierre } from "../../config/axios";
 import { iniciarPagoRedsys } from "../../utils/pagoRedsys";
 import useAbiertoAhora from "../../hooks/useAbiertoAhora";
 import useOpcionesEntrega from "../../hooks/useOpcionesEntrega";
@@ -707,6 +707,11 @@ const Checkout = () => {
           }
           toast.error("Revisa los datos del formulario");
         }
+      } else if (esTiendaCerrada(error)) {
+        // La tienda ha cerrado mientras el cliente rellenaba el pedido. El
+        // interceptor ya activa la pantalla de mantenimiento; el carrito se
+        // conserva en localStorage para cuando vuelva a abrir.
+        toast.info(datosCierre(error).titulo);
       } else {
         toast.error(
           error.response?.data?.message ?? "No se pudo realizar el pedido",

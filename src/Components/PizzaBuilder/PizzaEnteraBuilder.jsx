@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tabs, Tab } from "react-bootstrap";
 import usePizzaPlantilla from "../../hooks/usePizzaPlantilla";
+import ErrorCarga from "../Shop/ErrorCarga";
 
 const toNum = (v) => Number.parseFloat(v ?? 0) || 0;
 
@@ -11,7 +12,7 @@ const formatEUR = (v) =>
   }).format(Number.isFinite(v) ? v : 0);
 
 export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
-  const { data: plantilla, isLoading, isError } = usePizzaPlantilla();
+  const { data: plantilla, isLoading, isError, error, refetch } = usePizzaPlantilla();
 
   const ingredientesPorCategoria = plantilla?.ingredientes ?? {};
   const tamanos = plantilla?.tamanos ?? [];
@@ -170,7 +171,7 @@ export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
 
   if (isError || !plantilla) {
     return (
-      <div className="alert alert-danger">Error al cargar ingredientes</div>
+      <ErrorCarga error={error} onReintentar={isError ? refetch : undefined} que="los ingredientes" />
     );
   }
 

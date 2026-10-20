@@ -3,6 +3,7 @@ import { Modal, Button } from "react-bootstrap";
 import { toast } from "react-toastify";
 import { useCarrito } from "../../context/CarritoContext";
 import usePizzaPlantilla from "../../hooks/usePizzaPlantilla";
+import ErrorCarga from "../Shop/ErrorCarga";
 import PizzaEnteraBuilder from "../PizzaBuilder/PizzaEnteraBuilder";
 import PizzaMitadBuilder from "../PizzaBuilder/PizzaMitadBuilder";
 
@@ -18,7 +19,7 @@ const formatEUR = (v) =>
 /* ── Componente ──────────────────────────────────── */
 export default function ModalCrearPizza({ show, onClose }) {
   const { agregarAlCarrito } = useCarrito();
-  const { data: plantilla, isLoading, isError } = usePizzaPlantilla();
+  const { data: plantilla, isLoading, isError, error, refetch } = usePizzaPlantilla();
 
   /* Estado principal */
   const [modo, setModo] = useState("entera");
@@ -175,9 +176,7 @@ export default function ModalCrearPizza({ show, onClose }) {
         )}
 
         {isError && (
-          <div className="alert alert-danger">
-            Error al cargar la configuración de pizza
-          </div>
+          <ErrorCarga error={error} onReintentar={refetch} que="la configuración de la pizza" />
         )}
 
         {plantilla && (

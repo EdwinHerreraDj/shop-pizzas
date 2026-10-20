@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Modal, Spinner, Tabs, Tab } from "react-bootstrap";
 import useIngredientesConPrecios from "../../hooks/useIngredientesConPrecios";
+import ErrorCarga from "../Shop/ErrorCarga";
 
 const toNum = (v) => Number.parseFloat(v ?? 0) || 0;
 
@@ -16,7 +17,7 @@ export default function ModalPersonalizar({
   onClose,
   onConfirm,
 }) {
-  const { data, isLoading, isError } = useIngredientesConPrecios(productoId);
+  const { data, isLoading, isError, error, refetch } = useIngredientesConPrecios(productoId);
 
   const [tamanoSeleccionado, setTamanoSeleccionado] = useState(null);
   const [ingredientes, setIngredientes] = useState([]);
@@ -189,9 +190,7 @@ export default function ModalPersonalizar({
         )}
 
         {isError && (
-          <div className="alert alert-danger">
-            Ocurrió un error al cargar el artículo.
-          </div>
+          <ErrorCarga error={error} onReintentar={refetch} que="el artículo" />
         )}
 
         {!isLoading && !isError && data && (
