@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import Slider from "react-slick";
 import { Link } from "react-router-dom";
 import useAbiertoAhora from "../../hooks/useAbiertoAhora";
@@ -115,45 +115,6 @@ function InfoPedido() {
 
 const HeroBanner1 = () => {
     const sliderRef = useRef(null);
-    const seccionRef = useRef(null);
-
-    /* Giro de la pizza al hacer scroll: guarda el progreso (0 → 1) en la
-       variable CSS --hero-giro de la sección; el giro lo pinta el CSS.
-       Solo escucha el scroll mientras el hero está en pantalla. */
-    useEffect(() => {
-        const seccion = seccionRef.current;
-        if (!seccion) return;
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-        let pendiente = false;
-        const actualizar = () => {
-            pendiente = false;
-            const alto = seccion.offsetHeight || 1;
-            const recorrido = Math.min(Math.max(-seccion.getBoundingClientRect().top / alto, 0), 1);
-            seccion.style.setProperty("--hero-giro", recorrido.toFixed(4));
-        };
-        const onScroll = () => {
-            if (!pendiente) {
-                pendiente = true;
-                requestAnimationFrame(actualizar);
-            }
-        };
-
-        const observador = new IntersectionObserver(([entrada]) => {
-            if (entrada.isIntersecting) {
-                window.addEventListener("scroll", onScroll, { passive: true });
-                actualizar();
-            } else {
-                window.removeEventListener("scroll", onScroll);
-            }
-        });
-        observador.observe(seccion);
-
-        return () => {
-            observador.disconnect();
-            window.removeEventListener("scroll", onScroll);
-        };
-    }, []);
 
     const irAPizzas = (e) => {
         e.preventDefault();
@@ -164,7 +125,7 @@ const HeroBanner1 = () => {
     };
 
     return (
-        <section className="banner-section fix" ref={seccionRef}>
+        <section className="banner-section fix">
             <div className="slider-area">
                 <div className="swiper banner-slider">
                     <div className="swiper-wrapper">
@@ -199,14 +160,12 @@ const HeroBanner1 = () => {
 
                                                                     {/* Imagen también en móvil y tablet, más pequeña */}
                                                                     <div className="d-lg-none text-center mb-4">
-                                                                        <div className="hero-giro mx-auto" style={{ maxWidth: 240 }}>
-                                                                            <img
-                                                                                src={item.img}
-                                                                                alt={item.title}
-                                                                                className="d-block mx-auto"
-                                                                                style={{ width: "100%", height: "auto" }}
-                                                                            />
-                                                                        </div>
+                                                                        <img
+                                                                            src={item.img}
+                                                                            alt={item.title}
+                                                                            className="d-block mx-auto"
+                                                                            style={{ width: "100%", maxWidth: 240, height: "auto" }}
+                                                                        />
                                                                     </div>
 
                                                                     <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start gap-3">
@@ -232,13 +191,11 @@ const HeroBanner1 = () => {
                                                     </div>
                                                     <div className="col-lg-5 col-xxl-6 d-none d-lg-block">
                                                         <div className="banner-thumb-area">
-                                                            <div className="hero-giro">
-                                                                <img
-                                                                    src={item.img}
-                                                                    alt={item.title}
-                                                                    style={{ maxWidth: "100%", height: "auto" }}
-                                                                />
-                                                            </div>
+                                                            <img
+                                                                src={item.img}
+                                                                alt={item.title}
+                                                                style={{ maxWidth: "100%", height: "auto" }}
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -273,16 +230,6 @@ const HeroBanner1 = () => {
 
             {/* Botones propios del hero: alto contraste sobre la foto de fondo */}
             <style>{`
-                /* Pizza que gira con el scroll (progreso en --hero-giro, 0 → 1) */
-                .hero-giro {
-                    transform:
-                        translateY(calc(var(--hero-giro, 0) * 70px))
-                        rotate(calc(var(--hero-giro, 0) * 720deg))
-                        scale(calc(1 - var(--hero-giro, 0) * 0.12));
-                    transform-origin: 50% 50%;
-                    will-change: transform;
-                }
-
                 .hero-btn {
                     position: relative;
                     z-index: 5;
