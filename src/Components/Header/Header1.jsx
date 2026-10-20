@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Nav from './Nav';
-import CartDrawer from '../Shop/CartDrawer';
 import MarqueeInfo from './MarqueeInfo';
+import CarritoBoton from './CarritoBoton';
 
 export default function Header1({ variant }) {
   const [mobileToggle, setMobileToggle] = useState(false);
@@ -77,18 +77,8 @@ export default function Header1({ variant }) {
                 </div>
               </div>
 
-              <div className="cs_main_header_right">
-                <div className="header-btn d-flex align-items-center">
-                  <div className="main-button">
-                    <Link
-                      to="/shop/cart"
-                      className="theme-btn flex items-center gap-3"
-                    >
-                      <i className="bi bi-basket2"></i>
-                      Ver pedido
-                    </Link>
-                  </div>
-                </div>
+              <div className="cs_main_header_right con-carrito">
+                <CarritoBoton />
               </div>
             </div>
           </div>

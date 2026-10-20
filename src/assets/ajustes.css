@@ -1,0 +1,21 @@
+/*
+ * Ajustes propios sobre la plantilla (se carga después de main.css).
+ *
+ * La plantilla pinta de rojo cualquier enlace al pasar el ratón
+ * (main.css: a:hover { color: var(--theme) !important; }).
+ * En los botones rojos con texto blanco, el texto se volvía rojo sobre rojo y
+ * desaparecía; en el menú, rojo sobre negro apenas se leía.
+ */
+
+/* Botones-enlace con texto blanco: el texto se mantiene blanco y el fondo se oscurece */
+a.text-white:hover,
+a.text-white:focus-visible {
+  color: #fff !important;
+  filter: brightness(0.9);
+}
+
+/* Menú principal (fondo negro): hover en naranja, legible */
+.cs_nav .cs_nav_list a:hover,
+.cs_nav .cs_nav_list a:focus-visible {
+  color: #fc791a !important;
+}

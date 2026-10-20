@@ -14,6 +14,7 @@ import "slick-carousel/slick/slick.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./assets/main.css";
+import "./assets/ajustes.css";
 
 // Crear instancia de React Query.
 // Un 503 de tienda cerrada no se reintenta: se muestra el mantenimiento al momento.
