@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs, Tab } from "react-bootstrap";
 import usePizzasExistentes from "../../hooks/usePizzasExistentes";
 import useIngredientesConPrecios from "../../hooks/useIngredientesConPrecios";
+import { TituloCategoria } from "./ui";
 
 const toNum = (v) => Number.parseFloat(v ?? 0) || 0;
 
@@ -218,11 +219,11 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
   return (
     <div>
       {/* ── LISTADO DE PIZZAS ── */}
-      <h6 className="fw-semibold mb-2">
-        <i className="bi bi-list-ul me-1 color-secundario" />
-        Elige una pizza
-      </h6>
-      <div className="d-flex flex-wrap gap-2">
+      <h4 className="cp-subtitulo">
+        <i className="bi bi-card-list" style={{ color: "#fc791a" }} />
+        Elige una pizza de la carta
+      </h4>
+      <div className="d-flex flex-wrap gap-2 cp-lista-pizzas">
         {pizzas.map((pizza) => {
           const active = pizzaSeleccionada?.id === pizza.id;
 
@@ -241,11 +242,8 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
                 setIngredientes([]);
                 lastPayloadRef.current = null;
               }}
-              className={`d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill border small fw-semibold ${
-                active
-                  ? "border-danger bg-danger bg-opacity-10 text-danger shadow-sm"
-                  : "border-secondary-subtle bg-white text-dark"
-              }`}
+              aria-pressed={active}
+              className={`cp-pizza ${active ? "activa" : ""}`}
             >
               {active && <i className="bi bi-check-circle-fill" />}
               <span className="text-nowrap">{pizza.nombre}</span>
@@ -284,83 +282,65 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
       {/* ── Contenido cuando hay pizza seleccionada ── */}
       {pizzaSeleccionada && detalle && !loadingDetalle && (
         <div className="mt-3 pt-3 border-top">
-          {/* ── Ingredientes base ── */}
-          <div className="mitad-bloque mb-3">
-            <h6 className="fw-semibold mb-1">
-              <i className="bi bi-basket me-1 color-secundario" />
-              Lleva
-            </h6>
-            <p className="small text-muted mb-2">Toca un ingrediente para quitarlo.</p>
+          {/* ── Lo que ya lleva ── */}
+          <div className="mb-3">
+            <h4 className="cp-subtitulo">
+              <i className="bi bi-basket2-fill" style={{ color: "#fc791a" }} />
+              Lo que ya lleva
+            </h4>
 
             {ingredientes.filter((i) => i.incluido).length === 0 ? (
-              <div className="alert alert-light border border-secondary-subtle py-2 px-3 small mb-0 text-muted">
-                <i className="bi bi-info-circle me-1" />
-                Esta pizza no tiene ingredientes base.
-              </div>
+              <p className="cp-ayuda mb-0">Esta pizza no tiene ingredientes base.</p>
             ) : (
-              <div className="d-flex flex-wrap gap-2">
-                {ingredientes
-                  .filter((i) => i.incluido)
-                  .map((ing) => {
-                    const desactivado = ing.cantidad === 0;
+              <>
+                <p className="cp-ayuda">¿No te gusta algo? Tócalo para quitarlo.</p>
+                <div className="cp-chips">
+                  {ingredientes
+                    .filter((i) => i.incluido)
+                    .map((ing) => {
+                      const desactivado = ing.cantidad === 0;
 
-                    return (
-                      <span
-                        key={ing.id}
-                        onClick={() => toggleBase(ing)}
-                        className={`badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center ${
-                          desactivado
-                            ? "bg-secondary-subtle text-muted border border-secondary-subtle"
-                            : "bg-light text-dark border"
-                        }`}
-                        style={{
-                          cursor: "pointer",
-                          userSelect: "none",
-                          transition: "all 0.2s ease",
-                        }}
-                        title={
-                          desactivado ? "Clic para añadir" : "Clic para quitar"
-                        }
-                      >
-                        <i
-                          className={`bi me-1 ${
-                            desactivado
-                              ? "bi-x-circle text-secondary"
-                              : "bi-check-circle-fill color-secundario"
-                          }`}
-                        />
-                        {ing.nombre}
-                      </span>
-                    );
-                  })}
-              </div>
+                      return (
+                        <span
+                          key={ing.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => toggleBase(ing)}
+                          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleBase(ing)}
+                          className={`cp-chip ${desactivado ? "quitado" : ""}`}
+                          title={desactivado ? "Toca para volver a ponerlo" : "Toca para quitarlo"}
+                        >
+                          <i className={`bi ${desactivado ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
+                          {ing.nombre}
+                        </span>
+                      );
+                    })}
+                </div>
+              </>
             )}
           </div>
 
-          {/* ── Ingredientes quitados ── */}
+          {/* ── Quitados ── */}
           {baseQuitados.length > 0 && (
-            <div className="mitad-bloque mb-3">
-              <h6 className="fw-semibold mb-1 text-muted">
-                <i className="bi bi-dash-circle me-1" />
-                Quitados
-              </h6>
-              <p className="small text-muted mb-2">Toca para volver a ponerlo.</p>
+            <div className="mb-3">
+              <h4 className="cp-subtitulo text-muted">
+                <i className="bi bi-dash-circle" />
+                Sin estos ingredientes
+              </h4>
+              <p className="cp-ayuda">Toca para volver a ponerlo.</p>
 
-              <div className="d-flex flex-wrap gap-2">
+              <div className="cp-chips">
                 {baseQuitados.map((ing) => (
                   <span
                     key={ing.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => toggleBase(ing)}
-                    className="badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center bg-danger-subtle text-muted border border-danger-subtle"
-                    style={{
-                      cursor: "pointer",
-                      userSelect: "none",
-                      transition: "all 0.2s ease",
-                      textDecoration: "line-through",
-                    }}
-                    title="Clic para restaurar"
+                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleBase(ing)}
+                    className="cp-chip quitado"
+                    title="Toca para volver a ponerlo"
                   >
-                    <i className="bi bi-arrow-counterclockwise me-1 text-success" />
+                    <i className="bi bi-arrow-counterclockwise" />
                     {ing.nombre}
                   </span>
                 ))}
@@ -370,34 +350,28 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
 
           {/* ── Extras añadidos (resumen) ── */}
           {extrasAnadidos.length > 0 && (
-            <div className="mitad-bloque mb-3">
-              <h6 className="fw-semibold mb-2">
-                <i className="bi bi-plus-circle me-1 text-success" />
-                Extras añadidos
-              </h6>
+            <div className="mb-3">
+              <h4 className="cp-subtitulo">
+                <i className="bi bi-stars text-success" />
+                Tus extras
+              </h4>
 
-              <div className="d-flex flex-wrap gap-2">
+              <div className="cp-chips">
                 {extrasAnadidos.map((ing) => {
                   const cantidad = ing.incluido
                     ? ing.cantidad - 1
                     : ing.cantidad;
 
                   return (
-                    <span
-                      key={ing.id}
-                      className="ingrediente-extra d-flex align-items-center gap-2 py-2 px-3 border rounded-pill bg-light shadow-sm"
-                      style={{ fontSize: "0.9rem" }}
-                    >
-                      <span className="fw-medium">{ing.nombre}</span>
-
-                      <span className="badge bg-light color-primario ms-1">
-                        ×{cantidad}
-                      </span>
-
+                    <span key={ing.id} className="cp-chip extra">
+                      <i className="bi bi-plus-circle-fill" />
+                      {ing.nombre}
+                      <strong>×{cantidad}</strong>
                       <button
-                        className="btn btn-sm btn-link p-0 m-0 text-danger"
+                        type="button"
+                        className="cp-chip-quitar"
                         onClick={() => quitarExtra(ing.id)}
-                        style={{ textDecoration: "none" }}
+                        aria-label={`Quitar ${ing.nombre}`}
                       >
                         <i className="bi bi-x-circle-fill" />
                       </button>
@@ -408,20 +382,20 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
             </div>
           )}
 
-          {/* ── Selector por categorías (Tabs) ── */}
-          <h6 className="fw-semibold mb-1">
-            <i className="bi bi-plus-square me-1 color-secundario" />
-            Añadir ingredientes
-          </h6>
-          <p className="small text-muted mb-2">Elige una categoría y usa + / −.</p>
+          {/* ── Añadir ingredientes por categorías ── */}
+          <h4 className="cp-subtitulo">
+            <i className="bi bi-plus-square-fill" style={{ color: "#fc791a" }} />
+            Añade lo que más te guste
+          </h4>
+          <p className="cp-ayuda">Elige una categoría y usa los botones + y −.</p>
 
           <Tabs
             defaultActiveKey={Object.keys(detalle.ingredientes)[0]}
-            className="mb-3 scrollable-tabs"
+            className="cp-categorias"
           >
             {Object.entries(detalle.ingredientes).map(([categoria, items]) => (
-              <Tab eventKey={categoria} title={categoria} key={categoria}>
-                <div className="list-group shadow-sm rounded-3">
+              <Tab eventKey={categoria} title={<TituloCategoria categoria={categoria} />} key={categoria}>
+                <div className="cp-ingredientes">
                   {items.map((ing) => {
                     const actual = ingredientes.find((i) => i.id === ing.id);
                     const cantidad = actual?.cantidad ?? 0;
@@ -437,51 +411,42 @@ export default function PizzaExistenteSelector({ tamanoId, onSelect }) {
                     return (
                       <div
                         key={ing.id}
-                        className={`list-group-item d-flex justify-content-between align-items-center ${
-                          ing.incluido && quitado
-                            ? "bg-danger-subtle"
-                            : cantidad > 0
-                              ? "bg-success-subtle"
-                              : "bg-white"
+                        className={`cp-ing ${
+                          ing.incluido && quitado ? "quitado" : cantidad > 0 ? "con-cantidad" : ""
                         }`}
                       >
-                        <div className="d-flex flex-column">
-                          <span className="fw-semibold text-dark">
-                            {ing.nombre}
-                          </span>
+                        <div className="d-flex flex-column" style={{ minWidth: 0 }}>
+                          <span className="cp-ing-nombre">{ing.nombre}</span>
                           {ing.incluido ? (
-                            <small className="text-muted">
-                              Ingrediente base
-                            </small>
+                            <span className="cp-ing-precio">Ya viene en esta pizza</span>
                           ) : (
-                            <small className="text-muted">
+                            <span className="cp-ing-precio">
                               +{precio.toFixed(2)} € / unidad
-                            </small>
+                            </span>
                           )}
                         </div>
 
-                        <div className="btn-group btn-group-sm rounded-pill overflow-hidden">
+                        <div className="cp-cantidad">
                           <button
-                            className="btn btn-light"
+                            type="button"
+                            className="cp-cantidad-btn menos"
                             onClick={() => disminuir(ing)}
                             disabled={cantidad === 0}
+                            aria-label={`Menos ${ing.nombre}`}
                           >
-                            −
+                            <i className="bi bi-dash-lg" />
                           </button>
 
-                          <button
-                            className="btn btn-light fw-semibold"
-                            disabled
-                          >
-                            {cantidad}
-                          </button>
+                          <span className="cp-cantidad-valor">{cantidad}</span>
 
                           <button
-                            className="btn btn-light"
+                            type="button"
+                            className="cp-cantidad-btn mas"
                             onClick={() => aumentar(ing)}
                             disabled={cantidadExtra >= max}
+                            aria-label={`Más ${ing.nombre}`}
                           >
-                            +
+                            <i className="bi bi-plus-lg" />
                           </button>
                         </div>
                       </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Tabs, Tab } from "react-bootstrap";
 import usePizzaPlantilla from "../../hooks/usePizzaPlantilla";
 import ErrorCarga from "../Shop/ErrorCarga";
+import { TituloCategoria } from "./ui";
 
 const toNum = (v) => Number.parseFloat(v ?? 0) || 0;
 
@@ -178,12 +179,16 @@ export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
   /* ── Render ────────────────────────────────────── */
   return (
     <div>
-      {/* ── Ingredientes base ── */}
+      {/* ── Lo que ya lleva ── */}
       {ingredientesBase.length > 0 && (
-        <div className="mb-4">
-          <h6 className="fw-semibold mb-2">Ingredientes base</h6>
+        <div className="mb-3">
+          <h4 className="cp-subtitulo">
+            <i className="bi bi-basket2-fill" style={{ color: "#fc791a" }} />
+            Lo que ya lleva
+          </h4>
+          <p className="cp-ayuda">¿No te gusta algo? Tócalo para quitarlo.</p>
 
-          <div className="d-flex flex-wrap gap-2">
+          <div className="cp-chips">
             {ingredientesBase.map((ing) => {
               const actual = ingredientes.find((i) => i.id === ing.id);
               const desactivado = (actual?.cantidad ?? 0) === 0;
@@ -191,26 +196,14 @@ export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
               return (
                 <span
                   key={ing.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleBase(ing)}
-                  className={`badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center ${
-                    desactivado
-                      ? "bg-secondary-subtle text-muted border border-secondary-subtle"
-                      : "bg-light text-dark border"
-                  }`}
-                  style={{
-                    cursor: "pointer",
-                    userSelect: "none",
-                    transition: "all 0.2s ease",
-                  }}
-                  title={desactivado ? "Clic para añadir" : "Clic para quitar"}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleBase(ing)}
+                  className={`cp-chip ${desactivado ? "quitado" : ""}`}
+                  title={desactivado ? "Toca para volver a ponerlo" : "Toca para quitarlo"}
                 >
-                  <i
-                    className={`bi me-1 ${
-                      desactivado
-                        ? "bi-x-circle text-secondary"
-                        : "bi-check-circle-fill color-secundario"
-                    }`}
-                  />
+                  <i className={`bi ${desactivado ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
                   {ing.nombre}
                 </span>
               );
@@ -219,29 +212,27 @@ export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
         </div>
       )}
 
-      {/* ── Ingredientes quitados ── */}
+      {/* ── Quitados ── */}
       {baseQuitados.length > 0 && (
-        <div className="mb-4">
-          <h6 className="fw-semibold mb-2 text-muted">
-            <i className="bi bi-dash-circle me-1" />
-            Ingredientes quitados
-          </h6>
+        <div className="mb-3">
+          <h4 className="cp-subtitulo text-muted">
+            <i className="bi bi-dash-circle" />
+            Sin estos ingredientes
+          </h4>
+          <p className="cp-ayuda">Toca para volver a ponerlo.</p>
 
-          <div className="d-flex flex-wrap gap-2">
+          <div className="cp-chips">
             {baseQuitados.map((ing) => (
               <span
                 key={ing.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleBase(ing)}
-                className="badge rounded-pill px-3 py-2 shadow-sm d-flex align-items-center bg-danger-subtle text-muted border border-danger-subtle"
-                style={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  transition: "all 0.2s ease",
-                  textDecoration: "line-through",
-                }}
-                title="Clic para restaurar"
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleBase(ing)}
+                className="cp-chip quitado"
+                title="Toca para volver a ponerlo"
               >
-                <i className="bi bi-arrow-counterclockwise me-1 text-success" />
+                <i className="bi bi-arrow-counterclockwise" />
                 {ing.nombre}
               </span>
             ))}
@@ -251,30 +242,26 @@ export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
 
       {/* ── Extras añadidos (resumen) ── */}
       {extrasAnadidos.length > 0 && (
-        <div className="mb-4">
-          <hr />
-          <h6 className="fw-semibold mb-2">Ingredientes añadidos:</h6>
+        <div className="mb-3">
+          <h4 className="cp-subtitulo">
+            <i className="bi bi-stars text-success" />
+            Tus extras
+          </h4>
 
-          <div className="d-flex flex-wrap gap-2">
+          <div className="cp-chips">
             {extrasAnadidos.map((ing) => {
               const cantidad = ing.incluido ? ing.cantidad - 1 : ing.cantidad;
 
               return (
-                <span
-                  key={ing.id}
-                  className="ingrediente-extra d-flex align-items-center gap-2 py-2 px-3 border rounded-pill bg-light shadow-sm"
-                  style={{ fontSize: "0.9rem" }}
-                >
-                  <span className="fw-medium">{ing.nombre}</span>
-
-                  <span className="badge bg-light color-primario ms-1">
-                    ×{cantidad}
-                  </span>
-
+                <span key={ing.id} className="cp-chip extra">
+                  <i className="bi bi-plus-circle-fill" />
+                  {ing.nombre}
+                  <strong>×{cantidad}</strong>
                   <button
-                    className="btn btn-sm btn-link p-0 m-0 text-danger"
+                    type="button"
+                    className="cp-chip-quitar"
                     onClick={() => quitarExtra(ing.id)}
-                    style={{ textDecoration: "none" }}
+                    aria-label={`Quitar ${ing.nombre}`}
                   >
                     <i className="bi bi-x-circle-fill" />
                   </button>
@@ -285,18 +272,20 @@ export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
         </div>
       )}
 
-      <hr />
-
-      {/* ── Selector por categorías (Tabs) ── */}
-      <h6 className="fw-semibold mb-3">Agregar ingredientes</h6>
+      {/* ── Añadir ingredientes por categorías ── */}
+      <h4 className="cp-subtitulo">
+        <i className="bi bi-plus-square-fill" style={{ color: "#fc791a" }} />
+        Añade lo que más te guste
+      </h4>
+      <p className="cp-ayuda">Elige una categoría y usa los botones + y −.</p>
 
       <Tabs
         defaultActiveKey={Object.keys(ingredientesPorCategoria)[0]}
-        className="mb-3 scrollable-tabs"
+        className="cp-categorias"
       >
         {Object.entries(ingredientesPorCategoria).map(([categoria, items]) => (
-          <Tab eventKey={categoria} title={categoria} key={categoria}>
-            <div className="list-group shadow-sm rounded-3">
+          <Tab eventKey={categoria} title={<TituloCategoria categoria={categoria} />} key={categoria}>
+            <div className="cp-ingredientes">
               {items.map((ing) => {
                 const actual = ingredientes.find((i) => i.id === ing.id);
                 const cantidad = actual?.cantidad ?? 0;
@@ -312,46 +301,42 @@ export default function PizzaEnteraBuilder({ tamanoId, onChange }) {
                 return (
                   <div
                     key={ing.id}
-                    className={`list-group-item d-flex justify-content-between align-items-center ${
-                      ing.incluido && quitado
-                        ? "bg-danger-subtle"
-                        : cantidad > 0
-                          ? "bg-success-subtle"
-                          : "bg-white"
+                    className={`cp-ing ${
+                      ing.incluido && quitado ? "quitado" : cantidad > 0 ? "con-cantidad" : ""
                     }`}
                   >
-                    <div className="d-flex flex-column">
-                      <span className="fw-semibold text-dark">
-                        {ing.nombre}
-                      </span>
+                    <div className="d-flex flex-column" style={{ minWidth: 0 }}>
+                      <span className="cp-ing-nombre">{ing.nombre}</span>
                       {ing.incluido ? (
-                        <small className="text-muted">Ingrediente base</small>
+                        <span className="cp-ing-precio">Ya viene en tu pizza</span>
                       ) : (
-                        <small className="text-muted">
+                        <span className="cp-ing-precio">
                           +{precio.toFixed(2)} € / unidad
-                        </small>
+                        </span>
                       )}
                     </div>
 
-                    <div className="btn-group btn-group-sm rounded-pill overflow-hidden">
+                    <div className="cp-cantidad">
                       <button
-                        className="btn btn-light"
+                        type="button"
+                        className="cp-cantidad-btn menos"
                         onClick={() => disminuir(ing)}
                         disabled={cantidad === 0}
+                        aria-label={`Menos ${ing.nombre}`}
                       >
-                        −
+                        <i className="bi bi-dash-lg" />
                       </button>
 
-                      <button className="btn btn-light fw-semibold" disabled>
-                        {cantidad}
-                      </button>
+                      <span className="cp-cantidad-valor">{cantidad}</span>
 
                       <button
-                        className="btn btn-light"
+                        type="button"
+                        className="cp-cantidad-btn mas"
                         onClick={() => aumentar(ing)}
                         disabled={cantidadExtra >= max}
+                        aria-label={`Más ${ing.nombre}`}
                       >
-                        +
+                        <i className="bi bi-plus-lg" />
                       </button>
                     </div>
                   </div>

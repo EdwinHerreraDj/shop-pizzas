@@ -1,11 +1,13 @@
 import { useState, useCallback, useMemo } from "react";
-import { Modal, Button } from "react-bootstrap";
+import { Modal } from "react-bootstrap";
 import { toast } from "react-toastify";
 import { useCarrito } from "../../context/CarritoContext";
 import usePizzaPlantilla from "../../hooks/usePizzaPlantilla";
 import ErrorCarga from "../Shop/ErrorCarga";
 import PizzaEnteraBuilder from "../PizzaBuilder/PizzaEnteraBuilder";
 import PizzaMitadBuilder from "../PizzaBuilder/PizzaMitadBuilder";
+import { Seccion, PizzaDibujo, PizzaTamano } from "../PizzaBuilder/ui";
+import "../../assets/crear-pizza.css";
 
 /* ── Helpers ─────────────────────────────────────── */
 const toNum = (v) => Number.parseFloat(v ?? 0) || 0;
@@ -158,20 +160,50 @@ export default function ModalCrearPizza({ show, onClose }) {
   const puedeAnadir =
     modo === "entera" ? !!pizzaEntera : !!pizzaMitadA && !!pizzaMitadB;
 
+  /* ── Progreso: 1 tipo (siempre), 2 tamaño, 3 pizza lista ── */
+  const pasosHechos = [true, !!tamanoIdActivo, puedeAnadir];
+  const textoProgreso = puedeAnadir
+    ? "¡Lista para el horno!"
+    : modo === "mitades"
+      ? "Elige tus dos sabores"
+      : "Dale tu toque";
+
   /* ── Render ────────────────────────────────────── */
   return (
-    <Modal show={show} onHide={onClose} size="lg" backdrop="static">
-      <Modal.Header closeButton className="bg-light border-bottom-1">
-        <Modal.Title className="fw-bold fuente-title color-primario">
-          Crear tu pizza
-        </Modal.Title>
-      </Modal.Header>
+    <Modal
+      show={show}
+      onHide={onClose}
+      size="lg"
+      backdrop="static"
+      dialogClassName="cp-modal"
+    >
+      {/* ── CABECERA ───────────────────────────── */}
+      <div className="cp-cabecera">
+        <button type="button" className="cp-cerrar" onClick={onClose} aria-label="Cerrar">
+          <i className="bi bi-x-lg" />
+        </button>
+        <h2>¡Vamos a crear tu pizza!</h2>
+        <p>Tres pasos y a disfrutar.</p>
 
-      <Modal.Body>
+        <div className="cp-progreso" aria-label="Progreso">
+          {pasosHechos.map((hecho, i) => (
+            <span key={i} className="d-inline-flex align-items-center gap-1">
+              {i > 0 && <span className={`cp-progreso-linea ${hecho ? "hecho" : ""}`} />}
+              <span className={`cp-progreso-punto ${hecho ? "hecho" : ""}`}>
+                {hecho ? <i className="bi bi-check-lg" /> : i + 1}
+              </span>
+            </span>
+          ))}
+          <span className="cp-progreso-texto">{textoProgreso}</span>
+        </div>
+      </div>
+
+      <Modal.Body className="cp-cuerpo">
         {/* Loading / Error */}
         {isLoading && (
           <div className="text-center py-5 text-muted">
-            Cargando configuración…
+            <div className="spinner-border mb-2" style={{ color: "#eb0029" }} role="status" />
+            <div>Preparando la masa…</div>
           </div>
         )}
 
@@ -181,97 +213,51 @@ export default function ModalCrearPizza({ show, onClose }) {
 
         {plantilla && (
           <>
-            {/* ── MODO ───────────────────────── */}
-            <div className="mb-4">
-              <Paso numero={1} titulo="Tipo de pizza" />
-
+            {/* ── 1. TIPO ─────────────────────── */}
+            <Seccion icono="bi-heart-fill" titulo="¿Cómo la quieres?" sub="Una sola receta o dos sabores en la misma pizza.">
               <div className="row g-3">
-                <div className="col-6">
+                <div className="col-12 col-sm-6">
                   <button
                     type="button"
                     onClick={() => handleCambiarModo("entera")}
-                    className="w-100 text-start px-3 py-3 rounded-3 border d-flex align-items-start gap-3"
-                    style={
-                      modo === "entera"
-                        ? {
-                            borderColor: "#eb0029",
-                            backgroundColor: "rgba(235, 0, 41, 0.05)",
-                          }
-                        : { backgroundColor: "#fff" }
-                    }
+                    aria-pressed={modo === "entera"}
+                    className={`cp-opcion ${modo === "entera" ? "activa" : ""}`}
                   >
-                    <span
-                      className="d-flex align-items-center justify-content-center rounded-circle border flex-shrink-0 mt-1"
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderColor: modo === "entera" ? "#eb0029" : "#adb5bd",
-                        backgroundColor: modo === "entera" ? "#eb0029" : "#fff",
-                      }}
-                    >
-                      {modo === "entera" && (
-                        <span
-                          className="rounded-circle bg-white"
-                          style={{ width: 8, height: 8 }}
-                        />
-                      )}
+                    <PizzaDibujo tipo="entera" />
+                    <span>
+                      <span className="cp-opcion-titulo">Pizza entera</span>
+                      <span className="cp-opcion-sub">Tú eliges todos los ingredientes</span>
                     </span>
-                    <div>
-                      <div className="fw-semibold">Crea tu propia pizza</div>
-                      <small className="text-muted lh-sm">
-                        Elige ingredientes y personaliza
-                      </small>
-                    </div>
                   </button>
                 </div>
-
-                <div className="col-6">
+                <div className="col-12 col-sm-6">
                   <button
                     type="button"
                     onClick={() => handleCambiarModo("mitades")}
-                    className="w-100 text-start px-3 py-3 rounded-3 border d-flex align-items-start gap-3"
-                    style={
-                      modo === "mitades"
-                        ? {
-                            borderColor: "#eb0029",
-                            backgroundColor: "rgba(235, 0, 41, 0.05)",
-                          }
-                        : { backgroundColor: "#fff" }
-                    }
+                    aria-pressed={modo === "mitades"}
+                    className={`cp-opcion ${modo === "mitades" ? "activa" : ""}`}
                   >
-                    <span
-                      className="d-flex align-items-center justify-content-center rounded-circle border flex-shrink-0 mt-1"
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderColor: modo === "mitades" ? "#eb0029" : "#adb5bd",
-                        backgroundColor:
-                          modo === "mitades" ? "#eb0029" : "#fff",
-                      }}
-                    >
-                      {modo === "mitades" && (
-                        <span
-                          className="rounded-circle bg-white"
-                          style={{ width: 8, height: 8 }}
-                        />
-                      )}
+                    <PizzaDibujo tipo="mitades" />
+                    <span>
+                      <span className="cp-opcion-titulo">Mitad y mitad</span>
+                      <span className="cp-opcion-sub">Lo mejor de dos sabores</span>
                     </span>
-                    <div>
-                      <div className="fw-semibold">Pizza por mitades</div>
-                      <small className="text-muted lh-sm">
-                        Combina dos sabores distintos
-                      </small>
-                    </div>
                   </button>
                 </div>
               </div>
-            </div>
+            </Seccion>
 
-            {/* ── TAMAÑO ─────────────────────── */}
-            <div className="mb-4">
-              <Paso numero={2} titulo="Tamaño" />
-
-              <div className="d-flex flex-wrap gap-2">
+            {/* ── 2. TAMAÑO ───────────────────── */}
+            <Seccion
+              icono="bi-rulers"
+              titulo="¿Qué tamaño te apetece?"
+              sub={
+                modo === "mitades"
+                  ? "Mitad y mitad está disponible a partir de la mediana."
+                  : "Para ti solo o para compartir."
+              }
+            >
+              <div className="cp-tamanos">
                 {tamanosDisponibles.map((t) => {
                   const activo = tamanoIdActivo === t.id;
                   return (
@@ -279,36 +265,38 @@ export default function ModalCrearPizza({ show, onClose }) {
                       key={t.id}
                       type="button"
                       aria-pressed={activo}
-                      className="crear-pizza-tamano flex-fill flex-sm-grow-0"
-                      data-activo={activo}
+                      className={`cp-tamano ${activo ? "activo" : ""}`}
                       onClick={() => handleCambiarTamano(t.id)}
                     >
-                      {activo && <i className="bi bi-check-circle-fill me-1" />}
-                      {t.nombre}
+                      <PizzaTamano
+                        indice={tamanos.findIndex((x) => x.id === t.id)}
+                        total={tamanos.length}
+                        activo={activo}
+                      />
+                      <span className="cp-tamano-nombre">
+                        {activo && <i className="bi bi-check-circle-fill me-1" style={{ color: "#eb0029" }} />}
+                        {t.nombre}
+                      </span>
                       {modo === "entera" && (
-                        <small className="ms-1 opacity-75">
-                          ({formatEUR(t.precio)})
-                        </small>
+                        <span className="cp-tamano-precio">{formatEUR(toNum(t.precio))}</span>
                       )}
                     </button>
                   );
                 })}
               </div>
-              {modo === "mitades" && (
-                <p className="small text-muted mt-2 mb-0">
-                  <i className="bi bi-info-circle me-1" />
-                  Las pizzas por mitades están disponibles a partir del tamaño mediano.
-                </p>
-              )}
-            </div>
+            </Seccion>
 
-            {/* ── BUILDER ────────────────────── */}
+            {/* ── 3. INGREDIENTES / MITADES ───── */}
             {tamanoIdActivo && (
-              <>
-                <Paso
-                  numero={3}
-                  titulo={modo === "entera" ? "Elige los ingredientes" : "Elige las dos mitades"}
-                />
+              <Seccion
+                icono={modo === "entera" ? "bi-magic" : "bi-circle-half"}
+                titulo={modo === "entera" ? "Dale tu toque" : "Elige tus dos mitades"}
+                sub={
+                  modo === "entera"
+                    ? "Quita lo que no te guste y añade tus extras favoritos."
+                    : "Una pizza de la carta o creada por ti en cada mitad."
+                }
+              >
                 {modo === "entera" ? (
                   <PizzaEnteraBuilder
                     tamanoId={tamanoIdActivo}
@@ -321,96 +309,38 @@ export default function ModalCrearPizza({ show, onClose }) {
                     onChange={handleMitadesChange}
                   />
                 )}
-              </>
+              </Seccion>
             )}
           </>
         )}
       </Modal.Body>
 
-      <Modal.Footer className="border-top-0 px-4 pb-4 pt-2">
+      {/* ── PIE ────────────────────────────────── */}
+      <div className="cp-pie">
         {modo === "mitades" && plantilla && (
-          <div className="crear-pizza-desglose w-100 small text-muted">
+          <p className="cp-nota mb-2">
             <i className="bi bi-info-circle me-1" />
             Se cobra la mitad más cara
             {recargoMitades > 0 && ` + ${formatEUR(recargoMitades)} por pizza a mitades`}.
             {!puedeAnadir && " Elige las dos mitades para ver el total."}
-          </div>
+          </p>
         )}
-        <div className="d-flex w-100 gap-3">
-          {/* CANCELAR */}
-          <Button
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="cp-ahora-no" onClick={onClose}>
+            Ahora no
+          </button>
+          <button
             type="button"
-            onClick={onClose}
-            className="flex-fill rounded-pill py-2 fw-semibold border"
-            style={{
-              backgroundColor: "#f8f9fa",
-              color: "#495057",
-              borderColor: "#dee2e6",
-            }}
-          >
-            Cancelar
-          </Button>
-
-          {/* AÑADIR */}
-          <Button
-            type="button"
-            className="flex-fill rounded-pill py-2 fw-bold text-white d-flex align-items-center justify-content-center gap-2"
-            style={{
-              backgroundColor: "#eb0029",
-              borderColor: "#eb0029",
-            }}
+            className="cp-anadir"
             disabled={!puedeAnadir}
             onClick={handleAnadir}
           >
-            <span>Añadir</span>
-            <span className="opacity-75">·</span>
-            <strong>{formatEUR(precioFinal)}</strong>
-          </Button>
+            <i className="bi bi-bag-plus-fill" />
+            <span>Añadir a mi pedido</span>
+            <span className="cp-anadir-precio">{formatEUR(precioFinal)}</span>
+          </button>
         </div>
-      </Modal.Footer>
-      <style>{`
-        .crear-pizza-tamano {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 120px;
-          padding: 0.6rem 1.2rem;
-          border-radius: 999px;
-          border: 1px solid #dee2e6;
-          background: #fff;
-          color: #495057;
-          font-weight: 600;
-          transition: all 0.2s ease;
-        }
-        .crear-pizza-tamano:hover { border-color: #eb0029; color: #eb0029; }
-        .crear-pizza-tamano[data-activo="true"] {
-          background: #eb0029;
-          border-color: #eb0029;
-          color: #fff;
-          box-shadow: 0 6px 18px rgba(235, 0, 41, 0.25);
-        }
-        .crear-pizza-desglose {
-          background: #f8f9fa;
-          border-radius: 14px;
-          padding: 0.75rem 1rem;
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
+      </div>
     </Modal>
-  );
-}
-
-/* ── Encabezado de paso numerado ─────────────────── */
-function Paso({ numero, titulo }) {
-  return (
-    <div className="d-flex align-items-center gap-2 mb-3">
-      <span
-        className="d-inline-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0"
-        style={{ width: 28, height: 28, backgroundColor: "#eb0029", fontSize: "0.85rem" }}
-      >
-        {numero}
-      </span>
-      <h6 className="fw-bold mb-0 color-primario">{titulo}</h6>
-    </div>
   );
 }

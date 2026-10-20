@@ -1,0 +1,345 @@
+/*
+ * Estilos del modal "Crear tu pizza" (entera y por mitades).
+ * Solo presentación: la lógica vive en ModalCrearPizza y los PizzaBuilder.
+ */
+
+:root {
+  --cp-rojo: #eb0029;
+  --cp-naranja: #fc791a;
+  --cp-crema: #fff8f1;
+  --cp-borde: #f3e3d6;
+}
+
+/* ── Modal ─────────────────────────────────────────── */
+.cp-modal .modal-content {
+  border: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--cp-crema);
+}
+
+.cp-cabecera {
+  position: relative;
+  padding: 1.5rem 1.75rem 1.25rem;
+  background: linear-gradient(120deg, var(--cp-rojo) 0%, var(--cp-naranja) 100%);
+  color: #fff;
+}
+.cp-cabecera h2 {
+  color: #fff;
+  font-size: 1.6rem;
+  margin: 0;
+  font-family: var(--title-font);
+}
+.cp-cabecera p { margin: 0.25rem 0 0; opacity: 0.92; }
+.cp-cerrar {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+.cp-cerrar:hover { background: rgba(255, 255, 255, 0.35); }
+
+/* Progreso de 3 pasos */
+.cp-progreso { display: flex; align-items: center; gap: 0.4rem; margin-top: 1rem; }
+.cp-progreso-punto {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  transition: all 0.3s ease;
+}
+.cp-progreso-punto.hecho { background: #fff; color: var(--cp-rojo); }
+.cp-progreso-linea {
+  flex: 0 0 34px;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.3);
+}
+.cp-progreso-linea.hecho { background: #fff; }
+.cp-progreso-texto { margin-left: 0.5rem; font-size: 0.85rem; opacity: 0.95; }
+
+.cp-cuerpo { padding: 1.25rem; }
+@media (min-width: 576px) { .cp-cuerpo { padding: 1.5rem 1.75rem; } }
+
+/* ── Tarjeta de apartado ───────────────────────────── */
+.cp-seccion {
+  background: #fff;
+  border-radius: 20px;
+  padding: 1.25rem;
+  box-shadow: 0 6px 22px rgba(120, 60, 20, 0.07);
+  border: 1px solid var(--cp-borde);
+}
+.cp-seccion + .cp-seccion { margin-top: 1rem; }
+@media (min-width: 576px) { .cp-seccion { padding: 1.5rem; } }
+
+.cp-seccion-cabecera { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.cp-seccion-icono {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--cp-rojo), var(--cp-naranja));
+  box-shadow: 0 6px 14px rgba(235, 0, 41, 0.25);
+}
+.cp-seccion-titulo { font-size: 1.15rem; font-weight: 700; margin: 0; color: #1b1b1b; }
+.cp-seccion-sub { font-size: 0.85rem; color: #8a7a6e; margin: 0; }
+
+.cp-subtitulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #3a2e27;
+  margin: 1rem 0 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cp-subtitulo:first-child { margin-top: 0; }
+.cp-ayuda { font-size: 0.8rem; color: #8a7a6e; margin: 0 0 0.6rem; }
+
+/* ── Tarjetas de opción (tipo de pizza) ────────────── */
+.cp-opcion {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem;
+  border-radius: 18px;
+  border: 2px solid var(--cp-borde);
+  background: #fff;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+.cp-opcion:hover { border-color: rgba(235, 0, 41, 0.4); transform: translateY(-2px); }
+.cp-opcion.activa {
+  border-color: var(--cp-rojo);
+  background: #fff4f5;
+  box-shadow: 0 8px 20px rgba(235, 0, 41, 0.15);
+}
+.cp-opcion-titulo { font-weight: 700; color: #1b1b1b; display: block; }
+.cp-opcion-sub { font-size: 0.82rem; color: #8a7a6e; }
+
+/* ── Tamaños ───────────────────────────────────────── */
+.cp-tamanos { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 0.6rem; }
+.cp-tamano {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  min-height: 130px;
+  padding: 0.9rem 0.5rem;
+  border-radius: 18px;
+  border: 2px solid var(--cp-borde);
+  background: #fff;
+  transition: all 0.2s ease;
+}
+.cp-tamano:hover { border-color: rgba(235, 0, 41, 0.4); transform: translateY(-2px); }
+.cp-tamano.activo {
+  border-color: var(--cp-rojo);
+  background: #fff4f5;
+  box-shadow: 0 8px 20px rgba(235, 0, 41, 0.15);
+}
+.cp-tamano-nombre { font-weight: 700; color: #1b1b1b; }
+.cp-tamano-precio { font-size: 0.85rem; font-weight: 700; color: var(--cp-rojo); }
+
+/* ── Etiquetas de ingrediente ("Lleva", "Quitados") ── */
+.cp-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #f1d2c2;
+  background: #fff7f0;
+  color: #3a2e27;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.cp-chip i { color: var(--cp-naranja); }
+.cp-chip:hover { border-color: var(--cp-rojo); }
+.cp-chip.quitado {
+  background: #f6f6f6;
+  border-style: dashed;
+  border-color: #d5d5d5;
+  color: #9a9a9a;
+  text-decoration: line-through;
+}
+.cp-chip.quitado i { color: #198754; }
+.cp-chip.extra { background: #eefaf2; border-color: #bfe8cd; cursor: default; }
+.cp-chip.extra i { color: #198754; }
+.cp-chip-quitar {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  line-height: 1;
+  color: #c0392b;
+}
+
+/* ── Categorías como pastillas (react-bootstrap Tabs) ── */
+.cp-categorias.nav-tabs {
+  border: 0;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.9rem !important;
+  scrollbar-width: thin;
+}
+.cp-categorias.nav-tabs .nav-link {
+  border: 1px solid var(--cp-borde) !important;
+  border-radius: 999px !important;
+  background: #fff;
+  color: #5a4a40;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.45rem 1rem;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+.cp-categorias.nav-tabs .nav-link:hover { border-color: var(--cp-rojo) !important; color: var(--cp-rojo); }
+.cp-categorias.nav-tabs .nav-link.active {
+  background: var(--cp-rojo) !important;
+  border-color: var(--cp-rojo) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 14px rgba(235, 0, 41, 0.25);
+}
+
+/* ── Tarjetitas de ingrediente ─────────────────────── */
+.cp-ingredientes { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
+@media (min-width: 576px) { .cp-ingredientes { grid-template-columns: 1fr 1fr; } }
+
+.cp-ing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.8rem 0.7rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--cp-borde);
+  background: #fff;
+  transition: all 0.2s ease;
+}
+.cp-ing.con-cantidad { background: #fff4ea; border-color: var(--cp-naranja); }
+.cp-ing.quitado { background: #f7f7f7; border-style: dashed; }
+.cp-ing-nombre { font-weight: 700; color: #1b1b1b; font-size: 0.92rem; line-height: 1.2; }
+.cp-ing-precio { font-size: 0.78rem; color: #8a7a6e; }
+.cp-ing.con-cantidad .cp-ing-precio { color: #c8590a; }
+
+.cp-cantidad { display: inline-flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.cp-cantidad-valor { min-width: 1.4rem; text-align: center; font-weight: 700; color: #1b1b1b; }
+.cp-cantidad-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: transform 0.15s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+.cp-cantidad-btn.menos { background: #f3ece6; color: #5a4a40; }
+.cp-cantidad-btn.mas { background: var(--cp-naranja); color: #fff; box-shadow: 0 4px 10px rgba(252, 121, 26, 0.35); }
+.cp-cantidad-btn:not(:disabled):active { transform: scale(0.9); }
+.cp-cantidad-btn:disabled { opacity: 0.35; box-shadow: none; cursor: not-allowed; }
+
+/* ── Pie ───────────────────────────────────────────── */
+.cp-pie {
+  padding: 1rem 1.25rem 1.25rem;
+  background: #fff;
+  border-top: 1px solid var(--cp-borde);
+}
+@media (min-width: 576px) { .cp-pie { padding: 1rem 1.75rem 1.5rem; } }
+.cp-nota { font-size: 0.82rem; color: #8a7a6e; margin-bottom: 0.75rem; }
+.cp-ahora-no {
+  border: 0;
+  background: transparent;
+  color: #8a7a6e;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+}
+.cp-ahora-no:hover { color: #3a2e27; }
+.cp-anadir {
+  flex: 1;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(120deg, var(--cp-rojo), #ff3d24);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  box-shadow: 0 10px 24px rgba(235, 0, 41, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.cp-anadir:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(235, 0, 41, 0.35); }
+.cp-anadir:disabled { opacity: 0.45; box-shadow: none; cursor: not-allowed; }
+.cp-anadir-precio {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+}
+
+/* ── Pizzas de la carta (en cada mitad) ───────────── */
+.cp-pizza {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--cp-borde);
+  background: #fff;
+  color: #3a2e27;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.cp-pizza:hover { border-color: var(--cp-rojo); color: var(--cp-rojo); transform: translateY(-1px); }
+.cp-pizza.activa {
+  background: var(--cp-rojo);
+  border-color: var(--cp-rojo);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(235, 0, 41, 0.25);
+}
+
+/* La plantilla capitaliza cada palabra de los títulos; aquí queremos un tono natural */
+.cp-modal h2,
+.cp-modal h3,
+.cp-modal h4,
+.cp-modal h5,
+.cp-modal h6 {
+  text-transform: none;
+}

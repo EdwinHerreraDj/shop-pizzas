@@ -55,7 +55,10 @@ export default function SelectorMitad({ tamanoId, tamanoNombre, onChange }) {
   return (
     <div className="mb-3">
       {/* Selector modo */}
-      <p className="small text-muted mb-2">¿Cómo quieres esta mitad?</p>
+      <h4 className="cp-subtitulo">
+        <i className="bi bi-question-circle-fill" style={{ color: "#fc791a" }} />
+        ¿Cómo quieres esta mitad?
+      </h4>
       <div className="row g-2 mb-3">
         <div className="col-6">
           <ModoCard
