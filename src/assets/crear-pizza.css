@@ -424,3 +424,76 @@
 @media (max-width: 575px) {
   .cp-producto-imagen { width: 70px; height: 70px; border-width: 3px; }
 }
+
+/* ── Página Finalizar pedido ──────────────────────── */
+.checkout-pagina { background: var(--cp-crema); }
+.checkout-pagina.section-padding { padding: 48px 0 80px; }
+.checkout-pagina h1, .checkout-pagina h2, .checkout-pagina h3,
+.checkout-pagina h4, .checkout-pagina h5, .checkout-pagina h6 { text-transform: none; }
+
+.checkout-paso {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--cp-naranja);
+  line-height: 1.2;
+}
+
+.checkout-opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.6rem;
+  border-radius: 16px;
+  border: 2px solid var(--cp-borde);
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.checkout-opcion:hover { border-color: rgba(235, 0, 41, 0.4); }
+.checkout-opcion.activa { border-color: var(--cp-rojo); background: #fff4f5; box-shadow: 0 6px 16px rgba(235, 0, 41, 0.12); }
+.checkout-opcion.desactivada { opacity: 0.5; cursor: not-allowed; }
+.checkout-opcion .form-check-input { width: 1.15em; height: 1.15em; accent-color: var(--cp-rojo); }
+.checkout-opcion-icono {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: #fff4ea;
+  color: var(--cp-naranja);
+  transition: all 0.2s ease;
+}
+.checkout-opcion.activa .checkout-opcion-icono { background: var(--cp-rojo); color: #fff; }
+
+.checkout-label { font-size: 0.85rem; font-weight: 700; color: #3a2e27; margin-bottom: 0.35rem; }
+.checkout-input {
+  border-radius: 14px !important;
+  border: 1px solid var(--cp-borde) !important;
+  background: #fffdfb;
+  padding: 0.7rem 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.checkout-input:focus {
+  border-color: var(--cp-naranja) !important;
+  box-shadow: 0 0 0 0.2rem rgba(252, 121, 26, 0.15) !important;
+  background: #fff;
+}
+.checkout-input.is-invalid { border-color: #dc3545 !important; }
+
+.checkout-resumen { position: sticky; top: 150px; }
+.checkout-resumen .cp-seccion-icono { width: 38px; height: 38px; font-size: 1.05rem; border-radius: 12px; }
+.checkout-item {
+  background: #fffaf5;
+  border: 1px solid var(--cp-borde);
+  border-radius: 14px;
+  padding: 0.75rem 0.9rem;
+}
+
+@media (max-width: 991px) { .checkout-resumen { position: static; } }

@@ -7,6 +7,7 @@ import { iniciarPagoRedsys } from "../../utils/pagoRedsys";
 import useAbiertoAhora from "../../hooks/useAbiertoAhora";
 import useOpcionesEntrega from "../../hooks/useOpcionesEntrega";
 import AvisoEntrega from "./AvisoEntrega";
+import "../../assets/crear-pizza.css";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -107,7 +108,7 @@ function ResumenItem({ item }) {
   const esMitades = item.tipo === "pizza-mitades";
 
   return (
-    <div className="border rounded-4 p-3 shadow-sm bg-white">
+    <div className="checkout-item">
       <div className="d-flex justify-content-between align-items-start">
         <div className="flex-grow-1">
           <div className="fw-bold color-primario">
@@ -169,7 +170,7 @@ function Campo({
   return (
     <div className="mb-3">
       {label && (
-        <label className="form-label fw-semibold small color-primario">
+        <label className="form-label checkout-label">
           {label}
           {required && <span className="text-danger ms-1">*</span>}
         </label>
@@ -180,7 +181,7 @@ function Campo({
           <textarea
             id={`field-${name}`}
             name={name}
-            className={`form-control rounded-3${error ? " is-invalid" : ""}`}
+            className={`form-control checkout-input${error ? " is-invalid" : ""}`}
             placeholder={placeholder}
             value={value}
             onChange={onChange}
@@ -191,7 +192,7 @@ function Campo({
             id={`field-${name}`}
             type={type}
             name={name}
-            className={`form-control rounded-3${error ? " is-invalid" : ""}`}
+            className={`form-control checkout-input${error ? " is-invalid" : ""}`}
             placeholder={placeholder ?? label}
             value={value}
             onChange={onChange}
@@ -236,16 +237,7 @@ function RadioCard({
   return (
     <label
       htmlFor={id}
-      className={`d-flex align-items-center gap-3 p-3 rounded-4 border mb-2 ${
-        checked
-          ? "border-danger bg-danger bg-opacity-10"
-          : "border-light-subtle bg-white"
-      }`}
-      style={{
-        cursor: disabled ? "not-allowed" : "pointer",
-        transition: "all 0.2s ease",
-        opacity: disabled ? 0.55 : 1,
-      }}
+      className={`checkout-opcion ${checked ? "activa" : ""} ${disabled ? "desactivada" : ""}`}
     >
       <input
         id={id}
@@ -258,15 +250,29 @@ function RadioCard({
         className="form-check-input mt-0 flex-shrink-0"
         style={{ accentColor: "#eb0029" }}
       />
-      <i
-        className={`bi ${icon} flex-shrink-0`}
-        style={{ fontSize: "1.4rem", color: checked ? "#eb0029" : "#6c757d" }}
-      />
+      <span className="checkout-opcion-icono">
+        <i className={`bi ${icon}`} />
+      </span>
       <div>
         <div className="fw-semibold color-primario">{label}</div>
         {sublabel && <div className="text-muted small">{sublabel}</div>}
       </div>
     </label>
+  );
+}
+
+// Cabecera numerada de cada apartado del checkout
+function CabeceraPaso({ numero, icono, titulo }) {
+  return (
+    <div className="cp-seccion-cabecera">
+      <span className="cp-seccion-icono">
+        <i className={`bi ${icono}`} />
+      </span>
+      <div>
+        <span className="checkout-paso">Paso {numero} de 4</span>
+        <h3 className="cp-seccion-titulo">{titulo}</h3>
+      </div>
+    </div>
   );
 }
 
@@ -724,30 +730,16 @@ const Checkout = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="section-padding bg-color2">
-      <div className="container" style={{ maxWidth: 960 }}>
-        <h2
-          className="fw-bold color-primario mb-1"
-          style={{ fontFamily: "var(--title-font)" }}
-        >
-          Finalizar pedido
-        </h2>
-        <p className="text-muted mb-4 small">
-          Revisa tu pedido y completa los datos de entrega
-        </p>
+    <div className="section-padding checkout-pagina">
+      <div className="container" style={{ maxWidth: 1080 }}>
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="row g-4">
             {/* ── COLUMNA IZQUIERDA: formulario ────────────────────────── */}
             <div className="col-lg-7">
               {/* Tipo de entrega */}
-              <div className="border rounded-4 p-4 shadow-sm bg-white mb-4">
-                <h5
-                  className="fw-bold color-primario mb-3"
-                  style={{ fontFamily: "var(--title-font)" }}
-                >
-                  ¿Cómo quieres recibir tu pedido?
-                </h5>
+              <div className="cp-seccion mb-3">
+                <CabeceraPaso numero={1} icono={esRecogida ? "bi-shop" : "bi-scooter"} titulo="¿Cómo quieres recibir tu pedido?" />
                 <AvisoEntrega className="mb-3" />
                 <RadioCard
                   id="entrega_domicilio"
@@ -782,13 +774,8 @@ const Checkout = () => {
               </div>
 
               {/* Datos personales */}
-              <div className="border rounded-4 p-4 shadow-sm bg-white mb-4">
-                <h5
-                  className="fw-bold color-primario mb-3"
-                  style={{ fontFamily: "var(--title-font)" }}
-                >
-                  {esRecogida ? "Tus datos" : "Datos de entrega"}
-                </h5>
+              <div className="cp-seccion mb-3">
+                <CabeceraPaso numero={2} icono="bi-person-fill" titulo={esRecogida ? "Tus datos" : "Datos de entrega"} />
 
                 <div className="row g-3">
                   <div className="col-md-6">
@@ -916,13 +903,8 @@ const Checkout = () => {
               </div>
 
               {/* Método de pago */}
-              <div className="border rounded-4 p-4 shadow-sm bg-white">
-                <h5
-                  className="fw-bold color-primario mb-3"
-                  style={{ fontFamily: "var(--title-font)" }}
-                >
-                  Método de pago
-                </h5>
+              <div className="cp-seccion">
+                <CabeceraPaso numero={3} icono="bi-wallet2" titulo="Método de pago" />
                 {metodosPago
                   .filter((m) =>
                     esRecogida ? m.activo_recogida : m.activo_domicilio,
@@ -960,13 +942,8 @@ const Checkout = () => {
               </div>
 
               {/* Hora de entrega/recogida */}
-              <div className="border rounded-4 p-4 shadow-sm bg-white mt-4">
-                <h5
-                  className="fw-bold color-primario mb-3"
-                  style={{ fontFamily: "var(--title-font)" }}
-                >
-                  {esRecogida ? "¿Cuándo pasas a recogerlo?" : "¿Cuándo lo quieres recibir?"}
-                </h5>
+              <div className="cp-seccion mt-3">
+                <CabeceraPaso numero={4} icono="bi-clock-fill" titulo={esRecogida ? "¿Cuándo pasas a recogerlo?" : "¿Cuándo lo quieres recibir?"} />
 
                 {tiendaCerradaPorHorario && (
                   <div
@@ -1037,7 +1014,7 @@ const Checkout = () => {
                       </div>
                     ) : (
                       <>
-                        <label className="form-label fw-semibold small color-primario">
+                        <label className="form-label checkout-label">
                           Hora deseada
                         </label>
                         <select
@@ -1067,18 +1044,15 @@ const Checkout = () => {
 
             {/* ── COLUMNA DERECHA: resumen ──────────────────────────────── */}
             <div className="col-lg-5">
-              <div
-                className="border rounded-4 shadow-sm bg-white"
-                style={{ position: "sticky", top: "100px" }}
-              >
+              <div className="cp-seccion p-0 overflow-hidden checkout-resumen">
                 {/* Header resumen */}
                 <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
-                  <h5
-                    className="fw-bold color-primario mb-0"
-                    style={{ fontFamily: "var(--title-font)" }}
-                  >
+                  <h3 className="cp-seccion-titulo d-flex align-items-center gap-2 mb-0">
+                    <span className="cp-seccion-icono">
+                      <i className="bi bi-receipt" />
+                    </span>
                     Tu pedido
-                  </h5>
+                  </h3>
                   <span className="badge rounded-pill px-3 py-2 bg-danger bg-opacity-10 text-danger">
                     {carrito.reduce((a, i) => a + (i.cantidad || 0), 0)} art.
                   </span>
@@ -1150,14 +1124,8 @@ const Checkout = () => {
 
                   <button
                     type="submit"
-                    className="btn w-100 rounded-pill py-3 fw-bold text-white"
+                    className="cp-anadir w-100"
                     disabled={submitBloqueado}
-                    style={{
-                      backgroundColor: submitBloqueado ? "#adb5bd" : "#eb0029",
-                      border: "none",
-                      fontSize: "1rem",
-                      transition: "background-color 0.2s ease",
-                    }}
                   >
                     {loading ? (
                       <>
