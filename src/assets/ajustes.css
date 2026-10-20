@@ -14,6 +14,19 @@ a.text-white:focus-visible {
   filter: brightness(0.9);
 }
 
+/* Botones de la plantilla redondeados, como el resto de botones de la tienda.
+   style4/style5 traen border-radius: 0 con más especificidad, por eso se repiten. */
+.theme-btn,
+.theme-btn.style4,
+.theme-btn.style5 {
+  border-radius: 999px;
+}
+
+/* El icono de .theme-btn lleva un recuadro blanco: lo hacemos circular a juego */
+.theme-btn i {
+  border-radius: 50%;
+}
+
 /* Menú principal (fondo negro): hover en naranja, legible */
 .cs_nav .cs_nav_list a:hover,
 .cs_nav .cs_nav_list a:focus-visible {

@@ -81,7 +81,7 @@ export default function CarritoSidebar() {
         Tu pedido
         {carrito.length > 0 && (
           <button
-            className="btn btn-sm btn-outline-vaciar ms-2 color-secundario"
+            className="btn btn-sm btn-outline-vaciar rounded-pill px-3 ms-2 color-secundario"
             onClick={vaciarCarrito}
           >
             Vaciar

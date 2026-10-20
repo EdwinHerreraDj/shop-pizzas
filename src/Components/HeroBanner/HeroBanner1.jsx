@@ -243,6 +243,7 @@ const HeroBanner1 = () => {
                     line-height: 1.2;
                     text-decoration: none;
                     border: 2px solid transparent;
+                    border-radius: 999px;
                     transition: background-color 0.25s ease, color 0.25s ease,
                         border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
                 }
