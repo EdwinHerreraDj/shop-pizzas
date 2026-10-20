@@ -208,6 +208,14 @@ function Campo({
 // Opción de radio con estilo de card seleccionable
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Icono (Bootstrap Icons) según la clave del método de pago
+const ICONOS_METODO_PAGO = {
+  efectivo: "bi-cash-coin",
+  tarjeta: "bi-credit-card",
+  transferencia: "bi-bank",
+};
+const iconoMetodoPago = (clave) => ICONOS_METODO_PAGO[clave] ?? "bi-wallet2";
+
 // "Te lo llevamos a casa · Pago: Efectivo, Tarjeta"
 function textoMetodos(texto, metodos) {
   if (!metodos.length) return texto;
@@ -250,7 +258,10 @@ function RadioCard({
         className="form-check-input mt-0 flex-shrink-0"
         style={{ accentColor: "#eb0029" }}
       />
-      <span style={{ fontSize: "1.4rem" }}>{icon}</span>
+      <i
+        className={`bi ${icon} flex-shrink-0`}
+        style={{ fontSize: "1.4rem", color: checked ? "#eb0029" : "#6c757d" }}
+      />
       <div>
         <div className="fw-semibold color-primario">{label}</div>
         {sublabel && <div className="text-muted small">{sublabel}</div>}
@@ -287,7 +298,7 @@ function PedidoConfirmado({ pedido, carritoSnapshot = [] }) {
               fontSize: "2.2rem",
             }}
           >
-            ✓
+            <i className="bi bi-check-lg" />
           </div>
           <h2 className="fw-bold color-primario mb-2">¡Pedido realizado!</h2>
           <p className="text-muted mb-1">
@@ -740,7 +751,7 @@ const Checkout = () => {
                   checked={form.tipo_entrega === "domicilio"}
                   onChange={handleChange}
                   disabled={metodosCargados && !hayDomicilio}
-                  icon="🛵"
+                  icon="bi-scooter"
                   label="Envío a domicilio"
                   sublabel={
                     metodosCargados && !hayDomicilio
@@ -755,7 +766,7 @@ const Checkout = () => {
                   checked={form.tipo_entrega === "recogida"}
                   onChange={handleChange}
                   disabled={metodosCargados && !hayRecogida}
-                  icon="🏪"
+                  icon="bi-shop"
                   label="Recoger en tienda"
                   sublabel={
                     metodosCargados && !hayRecogida
@@ -919,7 +930,7 @@ const Checkout = () => {
                       value={m.clave}
                       checked={form.metodo_pago === m.clave}
                       onChange={handleChange}
-                      icon={m.icono}
+                      icon={iconoMetodoPago(m.clave)}
                       label={m.nombre}
                       sublabel={
                         esRecogida
@@ -992,7 +1003,7 @@ const Checkout = () => {
                     setModoHora("asap");
                     setHoraDeseada("");
                   }}
-                  icon="⚡"
+                  icon="bi-lightning-charge-fill"
                   label="Lo antes posible"
                   sublabel={
                     tiendaCerradaPorHorario
@@ -1007,7 +1018,7 @@ const Checkout = () => {
                   value="programar"
                   checked={modoHora === "programar"}
                   onChange={() => setModoHora("programar")}
-                  icon="🕐"
+                  icon="bi-clock"
                   label="Programar hora"
                   sublabel="Elige la hora que prefieras"
                 />

@@ -28,9 +28,10 @@ export default function AvisoEntrega({ compacto = false, className = "" }) {
       } ${compacto ? "px-2 py-2 small" : "px-3 py-3"} ${className}`}
       style={{ color: ninguna ? undefined : "#7a4a00" }}
     >
-      <span style={{ fontSize: compacto ? "1rem" : "1.3rem", lineHeight: 1.2 }}>
-        {ninguna ? "⛔" : recogida ? "🏪" : "🛵"}
-      </span>
+      <i
+        className={`bi ${ninguna ? "bi-x-octagon-fill" : recogida ? "bi-shop" : "bi-scooter"}`}
+        style={{ fontSize: compacto ? "1rem" : "1.3rem", lineHeight: 1.2 }}
+      />
       <div>
         <div className="fw-semibold">{mensaje}</div>
         {!ninguna && metodos.length > 0 && (
