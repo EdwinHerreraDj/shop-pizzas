@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useCarrito } from "../../context/CarritoContext";
 import usePrecios from "../../hooks/usePrecios";
+import AvisoEntrega from "./AvisoEntrega";
 
 /* ── Helpers ─────────────────────────────────────── */
 const renderExtras = (extras = []) => {
@@ -269,6 +270,8 @@ const Cart = () => {
 
             {/* ── RESUMEN ── */}
             <div className="border rounded-4 p-4 shadow-sm bg-light">
+              <AvisoEntrega className="mb-3" />
+
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Subtotal</span>
                 <span className="fw-semibold">{formatEUR(totalCarrito)}</span>

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useCarrito } from "../../context/CarritoContext";
 import usePrecios from "../../hooks/usePrecios";
+import AvisoEntrega from "./AvisoEntrega";
 
 const ROJO = "#eb0029";
 const NARANJA = "#fc791a";
@@ -240,6 +241,8 @@ export default function CartDropdown() {
               borderTop: "1px solid #e9ecef",
             }}
           >
+            <AvisoEntrega compacto className="mb-3" />
+
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="text-muted small fw-medium">Total</span>
               <span

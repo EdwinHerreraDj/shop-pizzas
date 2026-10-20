@@ -5,6 +5,8 @@ import { useCarrito } from "../../context/CarritoContext";
 import clientesAxios from "../../config/axios";
 import { iniciarPagoRedsys } from "../../utils/pagoRedsys";
 import useAbiertoAhora from "../../hooks/useAbiertoAhora";
+import useOpcionesEntrega from "../../hooks/useOpcionesEntrega";
+import AvisoEntrega from "./AvisoEntrega";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -206,6 +208,12 @@ function Campo({
 // Opción de radio con estilo de card seleccionable
 // ─────────────────────────────────────────────────────────────────────────────
 
+// "Te lo llevamos a casa · Pago: Efectivo, Tarjeta"
+function textoMetodos(texto, metodos) {
+  if (!metodos.length) return texto;
+  return `${texto} · Pago: ${metodos.map((m) => m.nombre).join(", ")}`;
+}
+
 function RadioCard({
   id,
   name,
@@ -394,7 +402,43 @@ const Checkout = () => {
     }
   }, [tiendaCerradaPorHorario, modoHora]);
   const [horaDeseada, setHoraDeseada] = useState("");
-  const [metodosPago, setMetodosPago] = useState([]);
+  const {
+    metodos: metodosPago,
+    metodosDomicilio,
+    metodosRecogida,
+    domicilio: hayDomicilio,
+    recogida: hayRecogida,
+    cargado: metodosCargados,
+  } = useOpcionesEntrega();
+
+  // Si el admin desactiva una opción de entrega, pasamos a la disponible
+  // y aseguramos que el método de pago elegido sea válido para ella.
+  useEffect(() => {
+    if (!metodosCargados) return;
+    setForm((prev) => {
+      let tipo = prev.tipo_entrega;
+      if (tipo === "domicilio" && !hayDomicilio && hayRecogida) tipo = "recogida";
+      if (tipo === "recogida" && !hayRecogida && hayDomicilio) tipo = "domicilio";
+
+      const campo = tipo === "recogida" ? "activo_recogida" : "activo_domicilio";
+      const metodoValido = metodosPago.some(
+        (m) => m.clave === prev.metodo_pago && m[campo],
+      );
+      const metodo = metodoValido
+        ? prev.metodo_pago
+        : (metodosPago.find((m) => m[campo])?.clave ?? "");
+
+      if (tipo === prev.tipo_entrega && metodo === prev.metodo_pago) return prev;
+
+      const next = { ...prev, tipo_entrega: tipo, metodo_pago: metodo };
+      if (tipo === "recogida") {
+        next.direccion = "";
+        next.codigo_postal = "";
+        next.barrio = "";
+      }
+      return next;
+    });
+  }, [metodosCargados, hayDomicilio, hayRecogida, metodosPago]);
 
   useEffect(() => {
     setLoadingZonas(true);
@@ -402,16 +446,10 @@ const Checkout = () => {
     Promise.all([
       clientesAxios.get("/shop/zonas-envio"),
       clientesAxios.get("/shop/franjas-horarias"),
-      clientesAxios.get("/shop/metodos-pago"),
     ])
-      .then(([zonasRes, franjasRes, metodosRes]) => {
+      .then(([zonasRes, franjasRes]) => {
         setZonas(zonasRes.data);
         setSlots(franjasRes.data.slots ?? []);
-        setMetodosPago(metodosRes.data);
-        const primerMetodo = metodosRes.data.find((m) => m.activo_domicilio);
-        if (primerMetodo) {
-          setForm((prev) => ({ ...prev, metodo_pago: prev.metodo_pago || primerMetodo.clave }));
-        }
       })
       .catch(() => {
         setErrorZonas(true);
@@ -458,10 +496,16 @@ const Checkout = () => {
     Number(zonaSeleccionada.pedido_minimo) > 0 &&
     Math.round(totalParaMinimo * 100) < Math.round(Number(zonaSeleccionada.pedido_minimo) * 100);
 
+  // La opción elegida no tiene ningún método de pago activo ahora mismo
+  const entregaNoDisponible =
+    metodosCargados && !(esRecogida ? hayRecogida : hayDomicilio);
+
   const submitBloqueado =
     loading ||
     loadingZonas ||
     errorZonas ||
+    !metodosCargados ||
+    entregaNoDisponible ||
     carrito.length === 0 ||
     cpSinCobertura ||
     (!esRecogida && !zonaSeleccionada) ||
@@ -688,15 +732,21 @@ const Checkout = () => {
                 >
                   ¿Cómo quieres recibir tu pedido?
                 </h5>
+                <AvisoEntrega className="mb-3" />
                 <RadioCard
                   id="entrega_domicilio"
                   name="tipo_entrega"
                   value="domicilio"
                   checked={form.tipo_entrega === "domicilio"}
                   onChange={handleChange}
+                  disabled={metodosCargados && !hayDomicilio}
                   icon="🛵"
                   label="Envío a domicilio"
-                  sublabel="Te lo llevamos a casa"
+                  sublabel={
+                    metodosCargados && !hayDomicilio
+                      ? "No disponible en este momento"
+                      : textoMetodos("Te lo llevamos a casa", metodosDomicilio)
+                  }
                 />
                 <RadioCard
                   id="entrega_recogida"
@@ -704,9 +754,14 @@ const Checkout = () => {
                   value="recogida"
                   checked={form.tipo_entrega === "recogida"}
                   onChange={handleChange}
+                  disabled={metodosCargados && !hayRecogida}
                   icon="🏪"
                   label="Recoger en tienda"
-                  sublabel="Gratis — sin gastos de envío"
+                  sublabel={
+                    metodosCargados && !hayRecogida
+                      ? "No disponible en este momento"
+                      : textoMetodos("Gratis — sin gastos de envío", metodosRecogida)
+                  }
                 />
               </div>
 
@@ -1097,6 +1152,8 @@ const Checkout = () => {
                       "Cargando…"
                     ) : errorZonas ? (
                       "Servicio no disponible"
+                    ) : entregaNoDisponible ? (
+                      "Opción de entrega no disponible"
                     ) : (
                       "Confirmar pedido →"
                     )}
